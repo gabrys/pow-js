@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -exuo pipefail
+
+tmpdir=$(mktemp -d)
+cd "$tmpdir"
+cp /pow/pow.js .
+cp /pow/utils.js .
+cp /build/pow_runner.com pow.com
+zip pow.com pow.js
+zip pow.com utils.js
+
+mkdir -p /dist/macos
+cp pow.com pow-macos
+echo "o=pow-macos ; " $(head pow.com | grep -a ^dd) | bash
+mv pow-macos /dist/macos/pow
+
+mkdir -p /dist/linux
+cp pow.com pow-linux
+timeout -s9 1 ./pow-linux 1>/dev/null 2>/dev/null || true
+mv pow-linux /dist/linux/pow
+
+mkdir -p /dist/windows
+mv pow.com /dist/windows/pow.exe

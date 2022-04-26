@@ -1,0 +1,72 @@
+--- cosmopolitan/third_party/quickjs/qjs.c	2022-04-27 17:41:28.374025709 +0200
++++ pow/qjs_pow.c	2022-04-28 11:04:28.641986572 +0200
+@@ -307,7 +307,7 @@
+     exit(1);
+ }
+ 
+-int main(int argc, char **argv)
++int orig_main(int argc, char **argv)
+ {
+     JSRuntime *rt;
+     JSContext *ctx;
+@@ -528,6 +528,10 @@
+           filename = argv[optind];
+           if (eval_file(ctx, filename, module)) goto fail;
+         }
++        js_std_loop(ctx);
++
++        const char *post_expr = "globalThis.__post_run && __post_run();";
++        if (eval_buf(ctx, post_expr, strlen(post_expr), "qjs_pow.c", 0)) goto fail;
+         if (interactive) {
+           js_std_eval_binary(ctx, qjsc_repl, qjsc_repl_size, 0);
+         }
+@@ -574,3 +578,49 @@
+     JS_FreeRuntime(rt);
+     return 1;
+ }
++
++int main(int argc, char **argv)
++{
++    int optind = 1;
++    int verbosity = 0;
++    int interactive = 0;
++
++    // parse -i/--interactive and -v/--verbose
++    while (optind < argc && *argv[optind] == '-') {
++        char *arg = argv[optind] + 1;
++        if (*arg == 'i')
++            interactive = 1;
++        else if (*arg == 'v')
++            verbosity++;
++	else
++	    break;
++        optind++;
++	// TODO: pow -vv
++    // TODO: rewrite main completely
++    }
++
++    int new_argc = argc + 2 + interactive;
++    char* new_argv[new_argc];
++    int i = 0;
++
++    new_argv[i++] = argv[0];
++
++    if (interactive)
++        new_argv[i++] = "-i";
++
++    new_argv[i++] = "--";
++    new_argv[i++] = "/zip/pow.js";
++
++    // Pass -i to JavaScript as well:
++    if (interactive)
++        new_argv[i++] = "-i";
++
++    // Verbosity goes to JavaScript only
++    while (verbosity--)
++        new_argv[i++] = "-v";
++
++    while (optind < argc && i < new_argc)
++        new_argv[i++] = argv[optind++];
++
++    return orig_main(i, new_argv);
++}
