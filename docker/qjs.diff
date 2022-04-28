@@ -13,10 +13,12 @@
            filename = argv[optind];
            if (eval_file(ctx, filename, module)) goto fail;
          }
-+        js_std_loop(ctx);
 +
++        // Extra call to __post_run after the main program ends
++        js_std_loop(ctx);
 +        const char *post_expr = "globalThis.__post_run && __post_run();";
 +        if (eval_buf(ctx, post_expr, strlen(post_expr), "qjs_pow.c", 0)) goto fail;
++
          if (interactive) {
            js_std_eval_binary(ctx, qjsc_repl, qjsc_repl_size, 0);
          }

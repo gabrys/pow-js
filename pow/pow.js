@@ -103,9 +103,8 @@ function pow_list_commands(pow) {
   print(`\nUsage: pow [options] <command> [command parameters]\n\n${cmd_help.join("\n")}\n`);
 }
 
-function no_such_command(pow, args) {
-  pow.log.error(`No such command: pow ${args[0]}`);
-  pow.log.error(`Type pow to see avaiable commands`);
+function command_not_found(pow, args) {
+  pow.log.error(`command "${args[0]}" not found`);
   return 1;
 }
 
@@ -124,8 +123,8 @@ function main(parsed_args, pow) {
 
   if (!fn) {
     cmd_args.unshift(parsed_args.cmd);
-    full_cmd = "no-such-command";
-    fn = no_such_command;
+    full_cmd = "command_not_found";
+    fn = command_not_found;
   }
 
   pow.log.info(`Launching ${full_cmd}`);
@@ -146,7 +145,7 @@ pow.verbosity = parsed_args.verbosity;
 pow.fns.__help = pow_list_commands;
 
 // TODO: implement pow --repl
-pow.fns.__repr = no_such_command;
+pow.fns.__repr = command_not_found;
 
 load_pow_files().then(
   function success() {

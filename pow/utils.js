@@ -71,11 +71,7 @@ export class PowLogger {
     }
 
     // simple logging
-    if (level == -1) {
-      std.err.printf("%s\n", args.join(" "));
-    } else {
-      std.err.printf("warning: %s\n", args.join(" "));
-    }
+    std.err.printf("pow: %s\n", args.join(" "));
   }
 
   error(...args) {
