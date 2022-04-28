@@ -39,7 +39,9 @@ export function pow_lint(pow) {
               --volume "$PWD:/work" \
               tmknom/prettier --write \
               pow/*.js pow_files/*.js`;
-  return pow.os.exec(["bash", "-c", cmd]);
+  return pow.os.exec(["bash", "-c", cmd], {
+    cwd: pow.base_dir,
+  });
 }
 
 export function pow_local(pow, args) {
@@ -79,6 +81,11 @@ export function pow_todo(pow) {
     "DO: | sed 's/:.*TO" +
     "DO:/:/' | sed 's/^/* /' ; echo";
   return pow.os.exec(["bash", "-c", cmd]);
+}
+
+export function pow_testing(pow) {
+  pow.print(pow.base_dir);
+  pow.print(pow.windows);
 }
 
 // vim: tabstop=2 shiftwidth=2 expandtab

@@ -2,7 +2,14 @@ import * as os from "os";
 import * as std from "std";
 
 // TODO: provide an emulation of subprocess.run
-// TODO: getuid/getgid
+
+function is_windows() {
+  // Windows: check if os.platform is usable
+  // os.platform returns linux due to cosmo?
+  const parts = os.getcwd()[0].split("/");
+  const disk = parts[0];
+  return !!disk.match(/^[A-Z]:$/);
+}
 
 export class PowUtils {
   file_exists(path) {
@@ -30,6 +37,26 @@ export class PowUtils {
     path.unshift(disk);
     return path.join("/");
   }
+
+  get_gid() {
+    if (this.is_windows) {
+      return;
+    }
+    const cmd = std.popen("id -g", "r");
+    const out = cmd.getline();
+    return ~~out;
+  }
+
+  get_uid() {
+    if (this.is_windows) {
+      return;
+    }
+    const cmd = std.popen("id -u", "r");
+    const out = cmd.getline();
+    return ~~out;
+  }
+
+  is_windows = is_windows();
 
   to_kabob_case(name) {
     return name.replace(/_/g, "-");
