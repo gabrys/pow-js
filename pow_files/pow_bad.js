@@ -14,7 +14,7 @@ export function pow_cosmo_init(pow) {
   }
   const cmd = `git clone https://github.com/jart/cosmopolitan &&
               cd cosmopolitan &&
-              git reset --hard 552525cbdd682f9e6e7d504ef62d0e1b0db3a2b8 &&
+              git reset --hard 9a6bd304a58b89277b8a2d490bfda9fd12d19370 &&
               cd .. &&
               cp cosmopolitan/third_party/quickjs/qjs.c pow/qjs_pow.c &&
               patch pow/qjs_pow.c docker/qjs.diff`;
