@@ -1,5 +1,7 @@
 export function pow_build_full(pow) {
-  pow.fns.cosmo_save_diff(pow);
+  if (!pow.windows) {
+    pow.fns.cosmo_save_diff(pow);
+  }
   pow.os.exec(["docker", "build", "-t", "pow", "docker/"], {
     cwd: pow.base_dir,
   });
