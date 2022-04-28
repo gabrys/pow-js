@@ -6,6 +6,24 @@ export function pow_build_full(pow) {
   return pow_update(pow);
 }
 
+export function pow_lint(pow) {
+  const dir = pow.base_dir;
+  const gid = pow.gid ?? 1000;
+  const uid = pow.uid ?? 1000;
+  const cmd = [
+    "docker",
+    "run",
+    "--rm",
+    `--user=${uid}:${gid}`,
+    `--volume=${dir}:/work`,
+    "tmknom/prettier",
+    "--write",
+    "pow/*.js",
+    "pow_files/*.js",
+  ];
+  return pow.os.exec(cmd, { cwd: pow.base_dir });
+}
+
 export function pow_test_logs(pow) {
   pow.log.error("ERROR");
   pow.log.warn("warn");
@@ -28,7 +46,6 @@ export function pow_update(pow) {
     "pow",
     "build-pow",
   ];
-  // TODO: Windows: check pow update (and pow.os.exec)
   return pow.os.exec(cmd, { cwd: pow.base_dir });
 }
 

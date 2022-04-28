@@ -4,8 +4,7 @@ import * as std from "std";
 // TODO: provide an emulation of subprocess.run
 
 function is_windows() {
-  // Windows: check if os.platform is usable
-  // os.platform returns linux due to cosmo?
+  // os.platform returns linux due to cosmo
   const parts = os.getcwd()[0].split("/");
   const disk = parts[0];
   return !!disk.match(/^[A-Z]:$/);

@@ -1,8 +1,17 @@
 export function pow_cosmo_clean(pow) {
+  // TODO: move pow cosmo-* to docker
+  if (pow.windows) {
+    pow.error("pow cosmo commands are not available on Windows");
+    return 1;
+  }
   return pow.os.exec(["rm", "-rf", "cosmopolitan", "pow/qjs_pow.c"]);
 }
 
 export function pow_cosmo_init(pow) {
+  if (pow.windows) {
+    pow.error("pow cosmo commands are not available on Windows");
+    return 1;
+  }
   const cmd = `git clone https://github.com/jart/cosmopolitan &&
               cd cosmopolitan &&
               git reset --hard 552525cbdd682f9e6e7d504ef62d0e1b0db3a2b8 &&
@@ -13,6 +22,10 @@ export function pow_cosmo_init(pow) {
 }
 
 export function pow_cosmo_save_diff(pow) {
+  if (pow.windows) {
+    pow.error("pow cosmo commands are not available on Windows");
+    return 1;
+  }
   if (!pow.utils.file_exists("pow/qjs_pow.c")) {
     pow.print("No qjs_pow.c, using cached docker/pow.diff");
     return;
@@ -23,6 +36,10 @@ export function pow_cosmo_save_diff(pow) {
 }
 
 export function pow_install(pow) {
+  if (pow.windows) {
+    pow.log.error("pow install is not available on Windows");
+    return;
+  }
   pow.os.exec(["sudo", "cp", "/usr/local/bin/jpow", "/usr/local/bin/jpow.old"]);
   pow.os.exec(["sudo", "cp", "dist/linux/pow", "/usr/local/bin/jpow.new"]);
   return pow.os.exec([
@@ -33,23 +50,11 @@ export function pow_install(pow) {
   ]);
 }
 
-export function pow_lint(pow) {
-  const cmd = `docker run --rm \
-              --user "$(id -u):$(id -g)" \
-              --volume "$PWD:/work" \
-              tmknom/prettier --write \
-              pow/*.js pow_files/*.js`;
-  return pow.os.exec(["bash", "-c", cmd], {
-    cwd: pow.base_dir,
-  });
-}
-
-export function pow_local(pow, args) {
-  args.unshift("dist/linux/pow");
-  return pow.os.exec(args);
-}
-
 export function pow_restore(pow) {
+  if (pow.windows) {
+    pow.log.error("pow restore is not available on Windows");
+    return;
+  }
   pow.os.exec([
     "sudo",
     "cp",
@@ -76,16 +81,16 @@ export function pow_shell(pow, args) {
 }
 
 export function pow_todo(pow) {
+  // TODO: run pow todo in Docker
+  if (pow.windows) {
+    pow.log.error("pow todo is not available on Windows");
+    return;
+  }
   const cmd =
     "( echo ; git grep TO" +
     "DO: | sed 's/:.*TO" +
     "DO:/:/' | sed 's/^/* /' ; echo ; ) | tee TODO";
-  return pow.os.exec(["bash", "-c", cmd], {cwd: pow.base_dir});
-}
-
-export function pow_testing(pow) {
-  pow.print(pow.base_dir);
-  pow.print(pow.windows);
+  return pow.os.exec(["bash", "-c", cmd], { cwd: pow.base_dir });
 }
 
 // vim: tabstop=2 shiftwidth=2 expandtab
