@@ -1,7 +1,7 @@
 export function pow_cosmo_clean(pow) {
   // TODO: move pow cosmo-* to docker
   if (pow.windows) {
-    pow.error("pow cosmo commands are not available on Windows");
+    pow.log.error("pow cosmo commands are not available on Windows");
     return 1;
   }
   return pow.os.exec(["rm", "-rf", "cosmopolitan", "pow/qjs_pow.c"]);
@@ -9,7 +9,7 @@ export function pow_cosmo_clean(pow) {
 
 export function pow_cosmo_init(pow) {
   if (pow.windows) {
-    pow.error("pow cosmo commands are not available on Windows");
+    pow.log.error("pow cosmo commands are not available on Windows");
     return 1;
   }
   const cmd = `git clone https://github.com/jart/cosmopolitan &&
@@ -23,7 +23,7 @@ export function pow_cosmo_init(pow) {
 
 export function pow_cosmo_save_diff(pow) {
   if (pow.windows) {
-    pow.error("pow cosmo commands are not available on Windows");
+    pow.log.error("pow cosmo commands are not available on Windows");
     return 1;
   }
   if (!pow.utils.file_exists("pow/qjs_pow.c")) {
