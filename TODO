@@ -1,0 +1,8 @@
+
+* docker/qjs.diff: pow -vv
+* docker/qjs.diff: rewrite main completely
+* pow/pow.js: implement pow --repl
+* pow/utils.js: provide an emulation of subprocess.run
+* pow_files/pow_good.js: pow update without docker (using plain zip)
+* pow_files/pow_good.js: Windows: check pow update (and pow.os.exec)
+

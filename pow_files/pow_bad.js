@@ -77,10 +77,10 @@ export function pow_shell(pow, args) {
 
 export function pow_todo(pow) {
   const cmd =
-    "echo ; git grep TO" +
+    "( echo ; git grep TO" +
     "DO: | sed 's/:.*TO" +
-    "DO:/:/' | sed 's/^/* /' ; echo";
-  return pow.os.exec(["bash", "-c", cmd]);
+    "DO:/:/' | sed 's/^/* /' ; echo ; ) | tee TODO";
+  return pow.os.exec(["bash", "-c", cmd], {cwd: pow.base_dir});
 }
 
 export function pow_testing(pow) {
