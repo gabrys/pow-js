@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -euo pipefail
+
+demz=0
+
+demzify() {
+  if [ $demz -gt 4 ]; then
+    exit 1
+  fi
+
+  demz=$((demz+1))
+
+  echo
+  echo  ====================
+  echo "deMZify now (time $demz)"
+  echo  ====================
+  echo
+  sleep 2
+
+  echo 'exit 123' > /build/cosmopolitan/build/sanitycheck2
+  sed s/MZqFpD/Ue6OCi/g -i $(find /build/cosmopolitan/ -name '*.com' -not -name 'qjs.com')
+}
+
+
+cd /build/cosmopolitan/
+
+while ! make -j4 o//third_party/quickjs/qjs.com; do
+  demzify
+done
+
+cp o/third_party/quickjs/qjs.com "$1"
