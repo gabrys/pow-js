@@ -1,11 +1,17 @@
+// TODO --platform=linux/amd64 or linux/x86_64 ??
+const dp = "--platform=linux/amd64";
+
 export function pow_build_full(pow) {
   if (!pow.windows) {
     pow.fns.cosmo_save_diff(pow);
   }
-  pow.os.exec(["docker", "build", "-t", "pow", "docker/"], {
-    cwd: pow.base_dir,
-  });
-  return pow_update(pow);
+  const build_ret = pow.os.exec(
+    ["docker", "build", dp, "-t", "pow", "docker/"],
+    {
+      cwd: pow.base_dir,
+    }
+  );
+  return build_ret || pow_update(pow);
 }
 
 export function pow_lint(pow) {
@@ -15,6 +21,7 @@ export function pow_lint(pow) {
   const cmd = [
     "docker",
     "run",
+    dp,
     "--rm",
     `--user=${uid}:${gid}`,
     `--volume=${dir}:/work`,

@@ -25,7 +25,7 @@ function parse_args(args) {
 
   for (; optind < args.length; optind += 1) {
     const arg = args[optind];
-    if (arg === "-i") {
+    if (arg === "--repl") {
       repl = true;
     } else if (arg === "-v") {
       verbosity += 1;
@@ -143,15 +143,17 @@ function main(parsed_args, pow) {
     fn = command_not_found;
   }
 
-  pow.log.info(`Launching ${full_cmd}`);
-  pow.log.debug(`Arguments`, ...cmd_args);
+  if (parsed_args.repl) {
+    pow.log.info(`Launching pow REPR`);
+  } else {
+    pow.log.info(`Launching ${full_cmd}`);
+    pow.log.debug(`Arguments`, ...cmd_args);
 
-  pow.pow_file = fn.pow_file;
-  pow.base_dir = fn.base_dir;
+    // TODO: update pow+file an base_dir via a decorator
+    pow.pow_file = fn.pow_file;
+    pow.base_dir = fn.base_dir;
 
-  const ret = fn(pow, cmd_args);
-
-  if (!parsed_args.repl) {
+    const ret = fn(pow, cmd_args);
     std.exit(ret);
   }
 }
@@ -162,9 +164,6 @@ pow.log = new PowLogger(parsed_args.verbosity);
 pow.verbosity = parsed_args.verbosity;
 
 pow.fns.__help = pow_list_commands;
-
-// TODO: implement pow --repl
-pow.fns.__repr = command_not_found;
 
 load().then(
   function success() {

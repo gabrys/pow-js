@@ -1,8 +1,6 @@
 
-* docker/qjs.diff: pow -vv
-* docker/qjs.diff: rewrite main completely
 * pow/pow.js: class based pow files with register and before_cmd
-* pow/pow.js: implement pow --repl
+* pow/pow.js: update pow+file an base_dir via a decorator
 * pow/utils.js: support for check, shell and timeout
 * pow_files/pow_bad.js: move pow cosmo-* to docker
 * pow_files/pow_bad.js: run pow todo in Docker
