@@ -72,6 +72,7 @@ function get_pow_files(dir) {
 }
 
 function load() {
+  // TODO: class based pow files with register and before_cmd
   pow.log.debug("Running load()");
   const pow_files = get_pow_files(pow.cwd);
   const promises = pow_files.map((modinfo) =>

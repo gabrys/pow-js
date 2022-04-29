@@ -1,8 +1,6 @@
 import * as os from "os";
 import * as std from "std";
 
-// TODO: provide an emulation of subprocess.run
-
 function is_windows() {
   // os.platform returns linux due to cosmo
   const parts = os.getcwd()[0].split("/");
@@ -56,6 +54,66 @@ export class PowUtils {
   }
 
   is_windows = is_windows();
+
+  runcmd(cmd, in_opts) {
+    // Limited port of Python's subprocess.run
+    // TODO: support for check, shell and timeout
+
+    in_opts = in_opts || {};
+
+    const opts = {
+      block: false,
+    };
+
+    let pipe_in;
+    let pipe_out;
+    let pipe_err;
+    let stdin;
+    let stdout;
+    let stderr;
+
+    if (in_opts.cwd) {
+      opts.cwd = in_opts.cwd;
+    }
+
+    if (in_opts.input) {
+      pipe_in = os.pipe();
+      opts.stdin = pipe_in[0];
+    }
+
+    if (in_opts.capture_output) {
+      pipe_out = os.pipe();
+      pipe_err = os.pipe();
+      opts.stdout = pipe_out[1];
+      opts.stderr = pipe_err[1];
+    }
+
+    const pid = os.exec(cmd, opts);
+    const ret = {};
+
+    if (in_opts.input) {
+      stdin = std.fdopen(pipe_in[1], "w");
+      stdin.puts(in_opts.input);
+      stdin.close();
+    }
+
+    if (in_opts.capture_output) {
+      os.close(pipe_out[1]);
+      os.close(pipe_err[1]);
+      stdout = std.fdopen(pipe_out[0], "r");
+      stderr = std.fdopen(pipe_err[0], "r");
+      ret.stdout = stdout.readAsString();
+      ret.stderr = stderr.readAsString();
+    }
+
+    ret.returncode = os.waitpid(pid, 0)[1];
+
+    if (in_opts.input) {
+      os.close(opts.stdin);
+    }
+
+    return ret;
+  }
 
   to_kabob_case(name) {
     return name.replace(/_/g, "-");
