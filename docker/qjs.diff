@@ -93,7 +93,7 @@
 +    JSContext *ctx;
 +    int optind;
 +    int verbosity = 0;
-+    int repr = 0;
++    int repl = 0;
 +    int help = 0;
 +
 +    /* cannot use getopt because we want to pass the command line to
@@ -122,8 +122,8 @@
 +                verbosity++;
 +                continue;
 +            }
-+            if (opt == 'r' || !strcmp(longopt, "repr")) {
-+                repr = 1;
++            if (opt == 'r' || !strcmp(longopt, "repl")) {
++                repl = 1;
 +                continue;
 +            }
 +            if (opt == 'h' || !strcmp(longopt, "help")) {
@@ -167,7 +167,7 @@
 +        goto fail;
 +    js_std_loop(ctx);
 +
-+    if (repr) {
++    if (repl) {
 +        js_std_eval_binary(ctx, qjsc_repl, qjsc_repl_size, 0);
 +        js_std_loop(ctx);
 +    }
