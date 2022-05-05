@@ -1,7 +1,10 @@
 
-* pow/pow.js: class based pow files with register and before_cmd
-* pow/pow.js: update pow+file an base_dir via a decorator
-* pow/utils.js: support for check, shell and timeout
+* pow/pow.mjs: special treatment for when no pow files are found
+* pow/pow.mjs: class based pow files with register and before_cmd
+* pow/pow.mjs: pow -u / pow -g t load user's pow files
+* pow/pow.mjs: support and embedded pow_files <wow>
+* pow/pow.utils.mjs: improve error message for pow --abc
+* pow/pow.utils.mjs: support for check, shell and timeout
 * pow_files/pow_bad.js: move pow cosmo-* to docker
 * pow_files/pow_bad.js: run pow todo in Docker
 * pow_files/pow_good.js: pow update without docker (using plain zip)

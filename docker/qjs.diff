@@ -156,7 +156,7 @@
 +    JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
 +    js_std_add_helpers(ctx, argc, argv);
 +
-+    const char *filename = "/zip/pow.js";
++    const char *filename = "/zip/pow.mjs";
 +    if (eval_file(ctx, filename, JS_EVAL_TYPE_MODULE))
 +        goto fail;
 +    js_std_loop(ctx);

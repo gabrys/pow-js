@@ -4,11 +4,15 @@ set -exuo pipefail
 
 tmpdir=$(mktemp -d)
 cd "$tmpdir"
-cp /pow/pow.js .
-cp /pow/utils.js .
+
+cp /pow/lib.*.mjs .
+cp /pow/pow.*.mjs .
+cp /pow/pow.mjs .
 cp /build/pow_runner.com pow.com
-zip pow.com pow.js
-zip pow.com utils.js
+
+zip pow.com lib.*.mjs
+zip pow.com pow.*.mjs
+zip pow.com pow.mjs
 
 mkdir -p /dist/macos
 cp pow.com pow-macos

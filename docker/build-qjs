@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+need_demzify() {
+  [ 123 -ne $(bash -c '/build/cosmopolitan/build/sanitycheck2 ; echo $?') ]
+}
+
 demzify() {
   echo
   echo  ====================
@@ -31,13 +35,16 @@ make_qjs() {
 }
 
 cd /build/cosmopolitan/
-for i in {1..5}; do
-  demzify $i
-  make_qjs || true
-  if ! has_mz_files; then
-    break
-  fi
-done
+
+if need_demzify; then
+  for i in {1..5}; do
+    demzify $i
+    make_qjs || true
+    if ! has_mz_files; then
+      break
+    fi
+  done
+fi
 
 make_qjs
 cp o/third_party/quickjs/qjs.com "$1"
