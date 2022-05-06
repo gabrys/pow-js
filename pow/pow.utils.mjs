@@ -2,29 +2,22 @@ import * as os from "os";
 import * as std from "std";
 import commandLineArgs from "./lib.args.mjs";
 
-function isWindows() {
-  // os.platform returns linux due to cosmo
-  const parts = os.getcwd()[0].split("/");
-  const disk = parts[0];
-  return !!disk.match(/^[A-Z]:$/);
-}
-
-function getUidGid() {
-  if (isWindows()) {
-    return [undefined, undefined];
-  }
-  const gid = std.popen("id -g", "r").getline();
-  const uid = std.popen("id -u", "r").getline();
-
-  return [~~uid, ~~gid];
-}
-
 export class PowUtils {
   constructor() {
-    const [uid, gid] = getUidGid();
-    this.gid = gid;
-    this.windows = isWindows();
-    this.uid = uid;
+    // example os.getcwd() on Windows:
+    // [ "//?/C:/Users/gabrys/pow-js", 0 ]
+    const path = os.getcwd()[0];
+    const windowsPathMatch = path.match(/^\/\/[^\/]+\/([A-Z]:\/.*)/);
+    if (windowsPathMatch) {
+      this.cwd = windowsPathMatch[1];
+      this.platform = "win32";
+      this.windows = true;
+      return;
+    }
+    this.cwd = path;
+    this.platform = std.popen("uname", "r").getline().toLowerCase();
+    this.gid = ~~std.popen("id -g", "r").getline();
+    this.uid = ~~std.popen("id -u", "r").getline();
   }
 
   fileExists = (path) => {

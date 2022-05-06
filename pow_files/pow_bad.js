@@ -69,17 +69,6 @@ export function pow_restore() {
   ]);
 }
 
-export function pow_shell(ctx, args) {
-  const switch_user = args.includes("--user");
-  const user_line = switch_user ? '--user "$(id -u):$(id -g)"' : "";
-  const cmd = `docker run --rm \
-              ${user_line} \
-              --volume "$PWD/pow/:/pow/" \
-              --volume "$PWD/dist/:/dist/" \
-              -it pow`;
-  return pow.exec(["bash", "-c", cmd]);
-}
-
 export function pow_todo() {
   // TODO: run pow todo in Docker
   if (pow.windows) {

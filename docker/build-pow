@@ -17,12 +17,13 @@ zip pow.com pow.mjs
 mkdir -p /dist/macos
 cp pow.com pow-macos
 echo "o=pow-macos ; " $(head pow.com | grep -a ^dd) | bash
-mv pow-macos /dist/macos/pow
+mv -b pow-macos /dist/macos/pow
 
 mkdir -p /dist/linux
 cp pow.com pow-linux
+sed s/MZqFpD/Ue6OCi/g -i pow-linux
 timeout -s9 1 ./pow-linux 1>/dev/null 2>/dev/null || true
-mv pow-linux /dist/linux/pow
+mv -b pow-linux /dist/linux/pow
 
 mkdir -p /dist/windows
-mv pow.com /dist/windows/pow.exe
+mv -b pow.com /dist/windows/pow.exe

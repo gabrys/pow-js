@@ -8,8 +8,6 @@ import { PowLogger, PowUtils } from "./pow.utils.mjs";
 const utils = new PowUtils();
 
 const pow = {
-  cwd: os.getcwd()[0],
-  exec: os.exec,
   fns: {},
   spawnSync: spawnSync,
   verbosity: 0,
@@ -62,10 +60,7 @@ function getPowFiles(dir) {
   while (true) {
     const file = `${curDir}/pow_file.js`;
     if (utils.fileExists(file)) {
-      powFiles.push({
-        baseDir: curDir,
-        powFile: file,
-      });
+      powFiles.push(file);
     }
     const powDir = `${curDir}/pow_files`;
     for (const name of utils.getFilesInDir(powDir)) {
@@ -83,7 +78,7 @@ function getPowFiles(dir) {
     if (newDir === curDir) {
       // TODO: special treatment for when no pow files are found
       return {
-        baseDir: "/",
+        baseDir: null,
         powFiles: [],
       };
     }
@@ -98,6 +93,8 @@ function load() {
   pow.log.debug("Running load()");
   const { baseDir, powFiles } = getPowFiles(pow.cwd);
   pow.baseDir = baseDir;
+
+  pow.log.debug("Discovered pow_files:", ...powFiles);
 
   const promises = powFiles.map((powFilePath) =>
     import(powFilePath).then(

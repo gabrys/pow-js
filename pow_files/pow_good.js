@@ -1,22 +1,24 @@
-// TODO --platform=linux/amd64 or linux/x86_64 ??
 const dp = "--platform=linux/amd64";
 
 export function powBuildFull() {
   if (!pow.windows) {
     pow.fns.cosmoSaveDiff();
   }
-  const build_ret = pow.exec(["docker", "build", dp, "-t", "pow", "docker/"], {
+  const cp = pow.spawnSync("docker", ["build", dp, "-t", "pow", "docker/"], {
     cwd: pow.baseDir,
+    stdio: "inherit",
   });
-  return build_ret || pow_update(pow);
+  if (cp.status !== 0) {
+    return cp.status;
+  }
+  return powUpdate();
 }
 
-export function pow_lint() {
+export function powLint() {
   const dir = pow.baseDir;
   const gid = pow.gid ?? 1000;
   const uid = pow.uid ?? 1000;
-  const cmd = [
-    "docker",
+  const dockerArgs = [
     "run",
     dp,
     "--rm",
@@ -27,45 +29,21 @@ export function pow_lint() {
     "pow/pow*.mjs",
     "pow_files/pow*.js",
   ];
-  return pow.exec(cmd, { cwd: pow.baseDir });
+  return pow.spawnSync("docker", dockerArgs, {
+    cwd: pow.baseDir,
+    stdio: "inherit",
+  });
 }
 
-export function pow_test_logs() {
-  pow.log.error("ERROR");
-  pow.log.warn("warn");
-  pow.log.info("info");
-  pow.log.debug("debug");
-}
-
-export function pow_update() {
-  // TODO: pow update without docker (using plain zip)
-  const dir = pow.baseDir;
+export function powPullJsLibs() {
   const gid = pow.gid ?? 1000;
   const uid = pow.uid ?? 1000;
-  const cmd = [
-    "docker",
-    "run",
-    "--rm",
-    `--user=${uid}:${gid}`,
-    `--volume=${dir}/pow/:/pow/`,
-    `--volume=${dir}/dist/:/dist/`,
-    "pow",
-    "build-pow",
-  ];
-  return pow.exec(cmd, { cwd: pow.baseDir });
-}
-
-export function pow_pull_js_libs() {
-  const dir = pow.baseDir;
-  const gid = pow.gid ?? 1000;
-  const uid = pow.uid ?? 1000;
-  const cmd = [
-    "docker",
+  const dockerArgs = [
     "run",
     "--rm",
     "-it",
     `--user=${uid}:${gid}`,
-    `--volume=${dir}/pow/:/pow/`,
+    `--volume=${pow.baseDir}/pow/:/pow/`,
     "node",
     "bash",
     "-c",
@@ -88,7 +66,56 @@ export function pow_pull_js_libs() {
       ) > /pow/lib.args.mjs
     `,
   ];
-  return pow.exec(cmd, { cwd: pow.baseDir });
+  return pow.spawnSync("docker", dockerArgs, {
+    cwd: pow.baseDir,
+    stdio: "inherit",
+  });
+}
+
+export function powShell(_ctx, args) {
+  const uid = pow.uid || 1000;
+  const gid = pow.gid || 1000;
+  const root = args.includes("--root");
+  const userArgs = root ? [] : [`--user=${uid}:${gid}`];
+  const dockerArgs = [
+    "run",
+    "--rm",
+    ...userArgs,
+    `--volume=${pow.baseDir}/pow/:/pow/`,
+    `--volume=${pow.baseDir}/dist/:/dist/`,
+    "-it",
+    "pow",
+  ];
+  pow.log.info(...dockerArgs);
+  return pow.spawnSync("docker", dockerArgs, {
+    cwd: pow.baseDir,
+    stdio: "inherit",
+  });
+}
+
+export function powTestLogs() {
+  pow.log.error("ERROR");
+  pow.log.warn("warn");
+  pow.log.info("info");
+  pow.log.debug("debug");
+}
+
+export function powUpdate() {
+  const gid = pow.gid ?? 1000;
+  const uid = pow.uid ?? 1000;
+  const dockerArgs = [
+    "run",
+    "--rm",
+    `--user=${uid}:${gid}`,
+    `--volume=${pow.baseDir}/pow/:/pow/`,
+    `--volume=${pow.baseDir}/dist/:/dist/`,
+    "pow",
+    "build-pow",
+  ];
+  return pow.spawnSync("docker", dockerArgs, {
+    cwd: pow.baseDir,
+    stdio: "inherit",
+  });
 }
 
 // vim: tabstop=2 shiftwidth=2 expandtab

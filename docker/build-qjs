@@ -3,7 +3,8 @@
 set -euo pipefail
 
 need_demzify() {
-  [ 123 -ne $(bash -c '/build/cosmopolitan/build/sanitycheck2 ; echo $?') ]
+  cp -n /build/cosmopolitan/build/sanitycheck2 /build/sanitycheck2
+  [ 123 -ne $(bash -c '/build/sanitycheck2 ; echo $?') ]
 }
 
 demzify() {
