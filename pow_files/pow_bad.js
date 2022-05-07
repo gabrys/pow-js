@@ -40,14 +40,19 @@ export function pow_install() {
     pow.log.error("pow install is not available on Windows");
     return;
   }
-  pow.exec(["sudo", "cp", "/usr/local/bin/jpow", "/usr/local/bin/jpow.old"]);
-  pow.exec(["sudo", "cp", "dist/linux/pow", "/usr/local/bin/jpow.new"]);
-  return pow.exec([
+  pow.spawnSync(
     "sudo",
-    "mv",
-    "/usr/local/bin/jpow.new",
-    "/usr/local/bin/jpow",
-  ]);
+    ["cp", "/usr/local/bin/jpow", "/usr/local/bin/jpow.old"],
+    { stdio: "inherit" }
+  );
+  pow.spawnSync("sudo", ["cp", "dist/linux/pow", "/usr/local/bin/jpow.new"], {
+    stdio: "inherit",
+  });
+  return pow.spawnSync(
+    "sudo",
+    ["mv", "/usr/local/bin/jpow.new", "/usr/local/bin/jpow"],
+    { stdio: "inherit" }
+  );
 }
 
 export function pow_restore() {
@@ -79,7 +84,11 @@ export function pow_todo() {
     "( echo ; git grep TO" +
     "DO: | sed 's/:.*TO" +
     "DO:/:/' | sed 's/^/* /' ; echo ; ) | tee TODO";
-  return pow.exec(["bash", "-c", cmd], { cwd: pow.baseDir });
+  return pow.spawnSync(cmd, [], {
+    cwd: pow.baseDir,
+    shell: true,
+    stdio: "inherit",
+  });
 }
 
 // vim: tabstop=2 shiftwidth=2 expandtab

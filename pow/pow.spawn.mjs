@@ -1,7 +1,7 @@
 import * as os from "os";
 import * as std from "std";
 
-import {windows, windowsFindExecutable} from "./pow.windows.mjs";
+import { windows, windowsFindExecutable } from "./pow.windows.mjs";
 
 class NotImplemented extends Error {}
 
@@ -9,11 +9,8 @@ function validateStdioOpt(opt) {
   if (typeof opt !== "string") {
     throw new NotImplemented("Non-string oprions for stdio are not suppoerted");
   }
-  // TODO: support stdio: ignore
-  if (opt === "overlapped" || opt === "ignore") {
-    throw new NotImplemented(
-      `spawn: stdio: ${opt} is not supported`
-    );
+  if (opt === "overlapped") {
+    throw new NotImplemented(`spawn: stdio: ${opt} is not supported`);
   }
   if (!["pipe", "inherit", "ignore"].includes(opt)) {
     throw TypeError(`The argument 'stdio' is invalid. Received '${opt}'`);
@@ -46,23 +43,21 @@ function normalizeStdioOption(stdio) {
 function buildCommand(file, args, shell) {
   let shellFile;
   if (shell && args && args.length) {
-    throw new NotImplemented(
-      "spawn: shell with arguments is not supported"
-    );
+    throw new NotImplemented("spawn: shell with arguments is not supported");
   }
   if (shell && windows) {
     // Set the shell, switches, and commands.
-      if (typeof shell === "string") {
-        shellFile = shell;
-      } else {
-        shellFile = std.getenv("comspec") || "cmd.exe";
-      }
-      // '/d /s /c' is used only for cmd.exe.
-      if (/^(?:.*\\)?cmd(?:\.exe)?$/i.test(shellFile)) {
-        args = ["/d", "/s", "/c", file];
-      } else {
-        args = ["-c", file];
-      }
+    if (typeof shell === "string") {
+      shellFile = shell;
+    } else {
+      shellFile = std.getenv("comspec") || "cmd.exe";
+    }
+    // '/d /s /c' is used only for cmd.exe.
+    if (/^(?:.*\\)?cmd(?:\.exe)?$/i.test(shellFile)) {
+      args = ["/d", "/s", "/c", file];
+    } else {
+      args = ["-c", file];
+    }
   }
   if (shell && !windows) {
     if (typeof shell === "string") {
@@ -103,6 +98,8 @@ export function spawnSync(cmd, args, inOpts) {
   inOpts = inOpts || {};
 
   // TODO: spawn: support skipping args
+  // TODO: spawn: better support stdio: ignore
+  // TODO: spawn: support timeout
 
   const supportedOpts = [
     "cwd",
@@ -125,9 +122,7 @@ export function spawnSync(cmd, args, inOpts) {
 
   for (const optName in inOpts) {
     if (unsupportedOpts.includes(optName)) {
-      throw new NotImplemented(
-        `spawn: option "${optName}" is not supported`
-      );
+      throw new NotImplemented(`spawn: option "${optName}" is not supported`);
     }
     if (!supportedOpts.includes(optName)) {
       throw new TypeError(`spawn: option "${optName}" is bad`);
@@ -160,33 +155,22 @@ export function spawnSync(cmd, args, inOpts) {
 
   if (encoding !== "utf-8") {
     if (stdioConfig[1] === "pipe" || stdioConfig[2] === "pipe") {
-      throw new NotImplemented(
-        `spawn: encoding: ${encoding} + stdio: pipe`
-      );
-    }
-    if (typeof inOpts.input !== "string" && stdioConfig[0] === "pipe") {
-      throw new NotImplemented(
-        `spawn: encoding: ${encoding} + stdio: pipe`
-      );
+      throw new NotImplemented(`spawn: encoding: ${encoding} + stdio: pipe`);
     }
   }
 
-  if (stdioConfig[1] === "pipe") {
-    if (encoding !== "utf-8") {
-      throw new NotImplemented(
-        "spawn: only encoding: utf-8 is supported"
-      );
-    }
+  if (stdioConfig[1] === "pipe" && encoding !== "utf-8") {
+    throw new NotImplemented("spawn: only encoding: utf-8 is supported");
+  }
+  if (["pipe", "ignore"].includes(stdioConfig[1])) {
     pipeOut = os.pipe();
     opts.stdout = pipeOut[1];
   }
 
-  if (stdioConfig[2] === "pipe") {
-    if (encoding !== "utf-8") {
-      throw new NotImplemented(
-        "spawn: only encoding: utf-8 is supported"
-      );
-    }
+  if (stdioConfig[2] === "pipe" && encoding !== "utf-8") {
+    throw new NotImplemented("spawn: only encoding: utf-8 is supported");
+  }
+  if (["pipe", "ignore"].includes(stdioConfig[1])) {
     pipeErr = os.pipe();
     opts.stderr = pipeErr[1];
   }
@@ -205,22 +189,20 @@ export function spawnSync(cmd, args, inOpts) {
     stdin = std.fdopen(pipeIn[1], "w");
     stdin.puts(inOpts.input);
     stdin.close();
-  } else if (stdioConfig[0] === "pipe") {
-    if (encoding !== "utf-8") {
-      throw new NotImplemented(
-        "spawn: piping to stdin is not supported"
-      );
-    }
   }
 
-  if (stdioConfig[1] === "pipe") {
+  if (["pipe", "ignore"].includes(stdioConfig[1])) {
     os.close(pipeOut[1]);
+  }
+  if (stdioConfig[1] === "pipe") {
     stdout = std.fdopen(pipeOut[0], "r");
     ret.stdout = stdout.readAsString();
   }
 
-  if (stdioConfig[2] === "pipe") {
+  if (["pipe", "ignore"].includes(stdioConfig[2])) {
     os.close(pipeErr[1]);
+  }
+  if (stdioConfig[2] === "pipe") {
     stderr = std.fdopen(pipeErr[0], "r");
     ret.stderr = stderr.readAsString();
   }

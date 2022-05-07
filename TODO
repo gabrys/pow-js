@@ -2,10 +2,11 @@
 * pow/pow.mjs: special treatment for when no pow files are found
 * pow/pow.mjs: class based pow files with register and before_cmd
 * pow/pow.mjs: pow -u / pow -g t load user's pow files
-* pow/pow.mjs: support and embedded pow_files <wow>
+* pow/pow.mjs: support embedding of pow_files
+* pow/pow.spawn.mjs: spawn: support skipping args
+* pow/pow.spawn.mjs: spawn: better support stdio: ignore
+* pow/pow.spawn.mjs: spawn: support timeout
 * pow/pow.utils.mjs: improve error message for pow --abc
-* pow/pow.utils.mjs: support for check, shell and timeout
 * pow_files/pow_bad.js: move pow cosmo-* to docker
 * pow_files/pow_bad.js: run pow todo in Docker
-* pow_files/pow_good.js: pow update without docker (using plain zip)
 

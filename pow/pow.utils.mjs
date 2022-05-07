@@ -1,7 +1,7 @@
 import * as os from "os";
 import * as std from "std";
 import commandLineArgs from "./lib.args.mjs";
-import {windows, windowsCwd} from "./pow.windows.mjs";
+import { windows, windowsCwd } from "./pow.windows.mjs";
 
 export class PowLogger {
   constructor(verbosity) {
