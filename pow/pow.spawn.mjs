@@ -1,24 +1,18 @@
 import * as os from "os";
 import * as std from "std";
 
+import {windows, windowsFindExecutable} from "./pow.windows.mjs";
+
 class NotImplemented extends Error {}
-
-function isWindows() {
-  // os.platform returns linux due to cosmo
-  const parts = os.getcwd()[0].split("/");
-  const disk = parts[0];
-  return !!disk.match(/^[A-Z]:$/);
-}
-
-const windows = isWindows();
 
 function validateStdioOpt(opt) {
   if (typeof opt !== "string") {
     throw new NotImplemented("Non-string oprions for stdio are not suppoerted");
   }
-  if (opt === "overlapped") {
+  // TODO: support stdio: ignore
+  if (opt === "overlapped" || opt === "ignore") {
     throw new NotImplemented(
-      "child_process: stdio: overlapped is not supported"
+      `spawn: stdio: ${opt} is not supported`
     );
   }
   if (!["pipe", "inherit", "ignore"].includes(opt)) {
@@ -33,7 +27,7 @@ function normalizeStdioOption(stdio) {
 
   if (stdio.length > 3) {
     throw new NotImplemented(
-      "child_process: passing more than 3 fds to stdio is not supported"
+      "spawn: passing more than 3 fds to stdio is not supported"
     );
   }
 
@@ -48,17 +42,16 @@ function normalizeStdioOption(stdio) {
   return stdio;
 }
 
-// Based on https://github.com/uki00a/deno_std/blob/3c8549b6fe09a147f320a35d6fc34f08824e0d13/node/child_process.ts
+// Based on https://github.com/uki00a/deno_std/blob/3c8549b6fe09a147f320a35d6fc34f08824e0d13/node/spawn.ts
 function buildCommand(file, args, shell) {
   let shellFile;
-  if (shell) {
-    if (args && args.length) {
-      throw new NotImplemented(
-        "child_process: shell with arguments is not supported"
-      );
-    }
+  if (shell && args && args.length) {
+    throw new NotImplemented(
+      "spawn: shell with arguments is not supported"
+    );
+  }
+  if (shell && windows) {
     // Set the shell, switches, and commands.
-    if (windows) {
       if (typeof shell === "string") {
         shellFile = shell;
       } else {
@@ -70,15 +63,22 @@ function buildCommand(file, args, shell) {
       } else {
         args = ["-c", file];
       }
+  }
+  if (shell && !windows) {
+    if (typeof shell === "string") {
+      shellFile = shell;
     } else {
-      if (typeof shell === "string") {
-        shellFile = shell;
-      } else {
-        shellFile = "/bin/sh";
-      }
-      args = ["-c", file];
-      file = shellFile;
+      shellFile = "/bin/sh";
     }
+    args = ["-c", file];
+  }
+  if (!shell && windows) {
+    if (!file.includes("/") && !file.includes("\\")) {
+      file = windowsFindExecutable(file) || file;
+    }
+  }
+  if (shell) {
+    file = shellFile;
   }
   return [file, ...args];
 }
@@ -102,6 +102,8 @@ export function spawnSync(cmd, args, inOpts) {
   */
   inOpts = inOpts || {};
 
+  // TODO: spawn: support skipping args
+
   const supportedOpts = [
     "cwd",
     "input",
@@ -124,11 +126,11 @@ export function spawnSync(cmd, args, inOpts) {
   for (const optName in inOpts) {
     if (unsupportedOpts.includes(optName)) {
       throw new NotImplemented(
-        `child_process: option "${optName}" is not supported`
+        `spawn: option "${optName}" is not supported`
       );
     }
     if (!supportedOpts.includes(optName)) {
-      throw new TypeError(`child_process: option "${optName}" is bad`);
+      throw new TypeError(`spawn: option "${optName}" is bad`);
     }
   }
 
@@ -159,12 +161,12 @@ export function spawnSync(cmd, args, inOpts) {
   if (encoding !== "utf-8") {
     if (stdioConfig[1] === "pipe" || stdioConfig[2] === "pipe") {
       throw new NotImplemented(
-        `child_process: encoding: ${encoding} + stdio: pipe`
+        `spawn: encoding: ${encoding} + stdio: pipe`
       );
     }
     if (typeof inOpts.input !== "string" && stdioConfig[0] === "pipe") {
       throw new NotImplemented(
-        `child_process: encoding: ${encoding} + stdio: pipe`
+        `spawn: encoding: ${encoding} + stdio: pipe`
       );
     }
   }
@@ -172,7 +174,7 @@ export function spawnSync(cmd, args, inOpts) {
   if (stdioConfig[1] === "pipe") {
     if (encoding !== "utf-8") {
       throw new NotImplemented(
-        "child_process: only encoding: utf-8 is supported"
+        "spawn: only encoding: utf-8 is supported"
       );
     }
     pipeOut = os.pipe();
@@ -182,7 +184,7 @@ export function spawnSync(cmd, args, inOpts) {
   if (stdioConfig[2] === "pipe") {
     if (encoding !== "utf-8") {
       throw new NotImplemented(
-        "child_process: only encoding: utf-8 is supported"
+        "spawn: only encoding: utf-8 is supported"
       );
     }
     pipeErr = os.pipe();
@@ -206,7 +208,7 @@ export function spawnSync(cmd, args, inOpts) {
   } else if (stdioConfig[0] === "pipe") {
     if (encoding !== "utf-8") {
       throw new NotImplemented(
-        "child_process: piping to stdin is not supported"
+        "spawn: piping to stdin is not supported"
       );
     }
   }

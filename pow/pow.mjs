@@ -1,4 +1,3 @@
-import * as os from "os";
 import * as std from "std";
 
 import "./lib.lodash.mjs";
@@ -89,7 +88,7 @@ function getPowFiles(dir) {
 function load() {
   // TODO: class based pow files with register and before_cmd
   // TODO: pow -u / pow -g t load user's pow files
-  // TODO: support and embedded pow_files <wow>
+  // TODO: support embedding of pow_files
   pow.log.debug("Running load()");
   const { baseDir, powFiles } = getPowFiles(pow.cwd);
   pow.baseDir = baseDir;
@@ -187,7 +186,12 @@ globalThis.__ = _;
 
 const parsedArgs = parseArgv(scriptArgs.slice(1));
 
+// Expose logger
 pow.log = new PowLogger(parsedArgs.verbosity);
+pow.DEBUG = (...args) => pow.log.debug(...args);
+pow.INFO = (...args) => pow.log.info(...args);
+pow.WARN = (...args) => pow.log.warn(...args);
+pow.ERROR = (...args) => pow.log.error(...args);
 pow.verbosity = parsedArgs.verbosity;
 
 pow.fns._help = powListCommands;
