@@ -73,10 +73,25 @@ export class PowUtils {
     return !out[1];
   };
 
-  getFilesInDir = (dir) => {
-    const out = os.readdir(dir);
-    const names = out[0];
-    return names;
+  listFiles = (path) => {
+    const dirs = [];
+    const files = [];
+    const [names, _readStatus] = os.readdir(path);
+    // TODO: pow.listFiles: check status
+    for (const name of names) {
+      if (name === "." || name === "..") {
+        continue;
+      }
+      const [stat, _statStatus] = os.stat(`${path}/${name}`);
+      if (stat & os.S_IFDIR) {
+        dirs.push(name);
+      } else {
+        files.push(name);
+      }
+    }
+    dirs.sort();
+    files.sort()
+    return [dirs, files];
   };
 
   parseArgv = (definitions, argv) => {

@@ -62,7 +62,8 @@ function getPowFiles(dir) {
       powFiles.push(file);
     }
     const powDir = `${curDir}/pow_files`;
-    for (const name of utils.getFilesInDir(powDir)) {
+    const [_subdirs, files] = utils.listFiles(powDir);
+    for (const name of files) {
       if (name.startsWith("pow_") && name.endsWith(".js")) {
         powFiles.push(`${powDir}/${name}`);
       }
