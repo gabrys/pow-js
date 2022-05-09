@@ -1,0 +1,17 @@
+{
+  "name": "pow",
+  "version": "1.0.0",
+  "description": "Pow is a CLI tool to run useful commands easily configurable via Pow files.",
+  "repository": "https://github.com/gabrys/pow-js.git",
+  "author": "Piotr Gabryjeluk <piotr.gabryjeluk@shortlist.co>",
+  "license": "MIT",
+  "cpu": ["x64", "arm64"],
+  "os": ["darwin", "linux"],
+  "optionalDependencies": {
+    "pow-dist-darwin": "gabrys/pow-dist-darwin",
+    "pow-dist-linux": "gabrys/pow-dist-linux"
+  },
+  "bin": {
+    "pow": "node_modules/.bin/pow"
+  }
+}
