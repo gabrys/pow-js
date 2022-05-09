@@ -1,5 +1,0 @@
-# Build pow_runner.com:
-docker build -t pow docker/
-
-# Build pow.com:
-docker run --user $(id -u):$(id -g) --rm --volume "$PWD/pow/:/pow/" --volume "$PWD/dist/:/dist/" pow build-pow

@@ -7,6 +7,7 @@
 * pow/pow.mjs: pow -f file to load a specific Powfile
 * pow/pow.mjs: pow -d dir to load Powfiles from a specific directory
 * pow/pow.mjs: support embedding of Powfiles
+* pow/pow.mjs: allow help for pow commands
 * pow/pow.spawn.mjs: spawn: support skipping args
 * pow/pow.spawn.mjs: spawn: better support stdio: ignore
 * pow/pow.spawn.mjs: spawn: support timeout

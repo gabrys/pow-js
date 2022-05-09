@@ -46,6 +46,7 @@ export function pow_install() {
     { stdio: "inherit" }
   );
   pow.spawnSync("sudo", ["cp", "dist/linux/pow", "/usr/local/bin/jpow.new"], {
+    cwd: pow.baseDir,
     stdio: "inherit",
   });
   return pow.spawnSync(

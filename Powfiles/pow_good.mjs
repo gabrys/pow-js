@@ -93,13 +93,6 @@ export function powShell(_ctx, args) {
   });
 }
 
-export function powTestLogs() {
-  pow.log.error("ERROR");
-  pow.log.warn("warn");
-  pow.log.info("info");
-  pow.log.debug("debug");
-}
-
 export function powUpdate() {
   const gid = pow.gid ?? 1000;
   const uid = pow.uid ?? 1000;

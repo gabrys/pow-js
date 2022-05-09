@@ -57,7 +57,7 @@ function getPowFiles(dir) {
 
   const powFiles = [];
   while (true) {
-    const file = `${curDir}/Powfile.js`;
+    const file = `${curDir}/Powfile.mjs`;
     if (utils.fileExists(file)) {
       powFiles.push(file);
     }
@@ -93,6 +93,7 @@ function load() {
   // TODO: pow -f file to load a specific Powfile
   // TODO: pow -d dir to load Powfiles from a specific directory
   // TODO: support embedding of Powfiles
+  // TODO: allow help for pow commands
   pow.log.debug("Running load()");
   const { baseDir, powFiles } = getPowFiles(pow.cwd);
   pow.baseDir = baseDir;

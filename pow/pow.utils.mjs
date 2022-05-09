@@ -100,8 +100,21 @@ export class PowUtils {
       argv: argv,
       stopAtFirstUnknown: true,
     });
+
+    const args = _unknown || [];
+    const firstArg = args[0] || "";
+
+    // Parse "-", "--" and error on unknown options
+    if (firstArg.startsWith("-")) {
+      if (firstArg === "--") {
+        args.shift();
+      } else if (firstArg !== "-") {
+        throw new Error(`Unknown option: ${firstArg}`);
+      }
+    }
+
     return {
-      args: _unknown || [],
+      args: args,
       opts: opts || {},
     };
   };
