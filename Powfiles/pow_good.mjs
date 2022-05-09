@@ -27,7 +27,7 @@ export function powLint() {
     "tmknom/prettier",
     "--write",
     "pow/pow*.mjs",
-    "pow_files/pow*.js",
+    "Powfiles/pow*.mjs",
   ];
   return pow.spawnSync("docker", dockerArgs, {
     cwd: pow.baseDir,

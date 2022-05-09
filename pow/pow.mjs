@@ -57,15 +57,16 @@ function getPowFiles(dir) {
 
   const powFiles = [];
   while (true) {
-    const file = `${curDir}/pow_file.js`;
+    const file = `${curDir}/Powfile.js`;
     if (utils.fileExists(file)) {
       powFiles.push(file);
     }
-    const powDir = `${curDir}/pow_files`;
-    const [_subdirs, files] = utils.listFiles(powDir);
-    for (const name of files) {
-      if (name.startsWith("pow_") && name.endsWith(".js")) {
-        powFiles.push(`${powDir}/${name}`);
+    for (const powDir of [`${curDir}/Powfiles`, `${curDir}/pow_files`]) {
+      const [_subdirs, files] = utils.listFiles(powDir);
+      for (const name of files) {
+        if (_.kebabCase(name).startsWith("pow-") && name.endsWith(".mjs")) {
+          powFiles.push(`${powDir}/${name}`);
+        }
       }
     }
     if (powFiles.length) {
@@ -76,7 +77,7 @@ function getPowFiles(dir) {
     }
     newDir = getParentDir(curDir);
     if (newDir === curDir) {
-      // TODO: special treatment for when no pow files are found
+      // TODO: special treatment for when no Powfiles are found
       return {
         baseDir: null,
         powFiles: [],
@@ -87,14 +88,16 @@ function getPowFiles(dir) {
 }
 
 function load() {
-  // TODO: class based pow files with register and before_cmd
-  // TODO: pow -u / pow -g t load user's pow files
-  // TODO: support embedding of pow_files
+  // TODO: pow -u to load user Powfile
+  // TODO: pow -g (or -s?) to load system Powfile
+  // TODO: pow -f file to load a specific Powfile
+  // TODO: pow -d dir to load Powfiles from a specific directory
+  // TODO: support embedding of Powfiles
   pow.log.debug("Running load()");
   const { baseDir, powFiles } = getPowFiles(pow.cwd);
   pow.baseDir = baseDir;
 
-  pow.log.debug("Discovered pow_files:", ...powFiles);
+  pow.log.debug("Discovered Powfiles:", ...powFiles);
 
   const promises = powFiles.map((powFilePath) =>
     import(powFilePath).then(
@@ -141,7 +144,7 @@ function powListCommands() {
       "\nUsage: pow [OPTIONS] COMMAND [COMMAND PARAMETERS]",
       "\nOptions:",
       "  --help   Display this help and exit",
-      "  --repl   Load pow_files and open REPL",
+      "  --repl   Load Powfiles and open REPL",
       "  -v       Set verbosity to INFO",
       "  -vv      Set verbosity to DEBUG",
       "\nCommands:",

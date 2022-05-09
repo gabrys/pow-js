@@ -90,7 +90,7 @@ export class PowUtils {
       }
     }
     dirs.sort();
-    files.sort()
+    files.sort();
     return [dirs, files];
   };
 

@@ -1,12 +1,15 @@
 
-* pow/pow.mjs: special treatment for when no pow files are found
-* pow/pow.mjs: class based pow files with register and before_cmd
-* pow/pow.mjs: pow -u / pow -g t load user's pow files
-* pow/pow.mjs: support embedding of pow_files
+* Powfiles/pow_bad.mjs: move pow cosmo-* to docker
+* Powfiles/pow_bad.mjs: run pow todo in Docker
+* pow/pow.mjs: special treatment for when no Powfiles are found
+* pow/pow.mjs: pow -u to load user Powfile
+* pow/pow.mjs: pow -g (or -s?) to load system Powfile
+* pow/pow.mjs: pow -f file to load a specific Powfile
+* pow/pow.mjs: pow -d dir to load Powfiles from a specific directory
+* pow/pow.mjs: support embedding of Powfiles
 * pow/pow.spawn.mjs: spawn: support skipping args
 * pow/pow.spawn.mjs: spawn: better support stdio: ignore
 * pow/pow.spawn.mjs: spawn: support timeout
+* pow/pow.utils.mjs: pow.listFiles: check status
 * pow/pow.utils.mjs: improve error message for pow --abc
-* pow_files/pow_bad.js: move pow cosmo-* to docker
-* pow_files/pow_bad.js: run pow todo in Docker
 
