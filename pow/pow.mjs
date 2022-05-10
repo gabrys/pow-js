@@ -135,39 +135,37 @@ function load() {
       }
     )
   );
-  
-  return Promise.all(promises).then(
-    function success() {
-      // Handle Python modules
-      if (powFilesPy.length !== 1) {
-        return;
-      }
 
-      pow.log.debug(`Loading Python Powfiles`);
+  return Promise.all(promises).then(function success() {
+    // Handle Python modules
+    if (powFilesPy.length !== 1) {
+      return;
+    }
 
-      const powPyPath = powFilesPy[0];
-      const ext = pow.windows ? ".cmd" : "";
-      const powRunnerPath = `py-pow-runner${ext}`;
-      const cp = spawnSync(powRunnerPath, [powPyPath, "--list-commands"], {
-        encoding: "utf-8",
-      });
-      const cmds = cp.stdout.trim().split("\n");
+    pow.log.debug(`Loading Python Powfiles`);
 
-      for (const cmd of cmds) {
-        const key = _.camelCase(cmd);
-        if (cmd && !pow.fns[key]) {
-          pow.log.debug(`  * pow_${_.snakeCase(cmd)}`);
-          pow.fns[key] = (args) => {
-            pow.log.info(`Launching pow ${[cmd, ...args].join(" ")} via Python`);
-            const cp2 = spawnSync(powRunnerPath, [powPyPath, cmd, ...args], {
-              stdio: "inherit",
-            });
-            return cp2.status;
-          };
-        }
+    const powPyPath = powFilesPy[0];
+    const ext = pow.windows ? ".cmd" : "";
+    const powRunnerPath = `py-pow-runner${ext}`;
+    const cp = spawnSync(powRunnerPath, [powPyPath, "--list-commands"], {
+      encoding: "utf-8",
+    });
+    const cmds = cp.stdout.trim().split("\n");
+
+    for (const cmd of cmds) {
+      const key = _.camelCase(cmd);
+      if (cmd && !pow.fns[key]) {
+        pow.log.debug(`  * pow_${_.snakeCase(cmd)}`);
+        pow.fns[key] = (args) => {
+          pow.log.info(`Launching pow ${[cmd, ...args].join(" ")} via Python`);
+          const cp2 = spawnSync(powRunnerPath, [powPyPath, cmd, ...args], {
+            stdio: "inherit",
+          });
+          return cp2.status;
+        };
       }
     }
-  );
+  });
 }
 
 function powListCommands() {
