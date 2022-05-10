@@ -145,12 +145,12 @@ function load() {
     pow.log.debug(`Loading Python Powfiles`);
 
     const powPyPath = powFilesPy[0];
-    const ext = pow.windows ? ".cmd" : "";
-    const powRunnerPath = `py-pow-runner${ext}`;
+    const powRunnerPath = "py-pow-runner";
     const cp = spawnSync(powRunnerPath, [powPyPath, "--list-commands"], {
       encoding: "utf-8",
     });
-    const cmds = cp.stdout.trim().split("\n");
+    // TODO: Weird bug on Windows. In Git Bash, the output is printed to stderr
+    const cmds = (cp.stdout.trim() || cp.stderr.trim()).split(/[\n\r]/g);
 
     for (const cmd of cmds) {
       const key = _.camelCase(cmd);
