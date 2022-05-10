@@ -118,6 +118,11 @@ export class PowUtils {
       opts: opts || {},
     };
   };
+
+  readFile = (path) => {
+    const f = std.open(path, "r");
+    return f.readAsString();
+  };
 }
 
 // vim: tabstop=2 shiftwidth=2 expandtab

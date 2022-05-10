@@ -12,6 +12,7 @@
     "pow-dist-linux": "gabrys/pow-dist-linux"
   },
   "bin": {
-    "pow": "node_modules/.bin/pow"
+    "pow": "node_modules/.bin/pow",
+    "py-pow-runner": "node_modules/.bin/py-pow-runner"
   }
 }

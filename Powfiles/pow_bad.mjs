@@ -1,3 +1,5 @@
+import * as os from "os";
+
 export function pow_cosmo_clean() {
   // TODO: move pow cosmo-* to docker
   if (pow.windows) {
@@ -61,13 +63,13 @@ export function pow_restore() {
     pow.log.error("pow restore is not available on Windows");
     return;
   }
-  pow.exec([
+  os.exec([
     "sudo",
     "cp",
     "/usr/local/bin/jpow.old",
     "/usr/local/bin/jpow.new",
   ]);
-  return pow.exec([
+  return os.exec([
     "sudo",
     "mv",
     "/usr/local/bin/jpow.new",

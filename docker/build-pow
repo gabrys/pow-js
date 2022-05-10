@@ -8,11 +8,13 @@ cd "$tmpdir"
 cp /pow/lib.*.mjs .
 cp /pow/pow.*.mjs .
 cp /pow/pow.mjs .
+cp /pow/pow.py .
 cp /build/pow_runner.com pow.com
 
 zip pow.com lib.*.mjs
 zip pow.com pow.*.mjs
 zip pow.com pow.mjs
+zip pow.com pow.py
 
 mkdir -p /dist/macos
 cp pow.com pow-macos

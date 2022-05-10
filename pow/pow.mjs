@@ -56,6 +56,7 @@ function getPowFiles(dir) {
   let newDir;
 
   const powFiles = [];
+
   while (true) {
     const file = `${curDir}/Powfile.mjs`;
     if (utils.fileExists(file)) {
@@ -65,6 +66,9 @@ function getPowFiles(dir) {
       const [_subdirs, files] = utils.listFiles(powDir);
       for (const name of files) {
         if (_.kebabCase(name).startsWith("pow-") && name.endsWith(".mjs")) {
+          powFiles.push(`${powDir}/${name}`);
+        }
+        if (name === "pow.py") {
           powFiles.push(`${powDir}/${name}`);
         }
       }
@@ -100,7 +104,31 @@ function load() {
 
   pow.log.debug("Discovered Powfiles:", ...powFiles);
 
-  const promises = powFiles.map((powFilePath) =>
+  const powFilesPy = powFiles.filter((name) => name.endsWith(".py"));
+  const powFilesMjs = powFiles.filter((name) => name.endsWith(".mjs"));
+
+  // Handle Python modules
+  if (powFilesPy.length === 1) {
+    pow.log.debug(`Loading Python Powfiles`);
+    const powPyPath = powFilesPy[0];
+    const ext = pow.windows ? ".cmd" : "";
+    const powRunnerPath = `py-pow-runner${ext}`;
+    const cp = spawnSync(powRunnerPath, [powPyPath, "--list-commands"], {encoding: "utf-8"});
+    const cmds = cp.stdout.trim().split("\n");
+    for (const cmd of cmds) {
+      if (cmd) {
+        pow.log.debug(`  * pow_${_.snakeCase(cmd)}`);
+        pow.fns[_.camelCase(cmd)] = (args) => {
+          pow.log.info(`Launching pow ${[cmd, ...args].join(" ")} via Python`);
+          cp = spawnSync(powRunnerPath, [powPyPath, cmd, ...args], {stdio: "inherit"});
+          return cp.status;
+        };
+      }
+    }
+  }
+
+  // Handle JavaScript modules
+  const promises = powFilesMjs.map((powFilePath) =>
     import(powFilePath).then(
       function success(mod) {
         pow.log.debug(`Loading ${powFilePath}`);
