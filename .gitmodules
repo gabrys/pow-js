@@ -1,0 +1,9 @@
+[submodule "dist/gitmodules/pow-dist-darwin"]
+	path = dist/gitmodules/pow-dist-darwin
+	url = git@github.com:gabrys/pow-dist-darwin.git
+[submodule "dist/gitmodules/pow-dist-linux"]
+	path = dist/gitmodules/pow-dist-linux
+	url = git@github.com:gabrys/pow-dist-linux.git
+[submodule "dist/gitmodules/pow-windows"]
+	path = dist/gitmodules/pow-windows
+	url = git@github.com:gabrys/pow-windows.git

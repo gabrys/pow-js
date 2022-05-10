@@ -8,13 +8,11 @@ cd "$tmpdir"
 cp /pow/lib.*.mjs .
 cp /pow/pow.*.mjs .
 cp /pow/pow.mjs .
-cp /pow/pow.py .
 cp /build/pow_runner.com pow.com
 
 zip pow.com lib.*.mjs
 zip pow.com pow.*.mjs
 zip pow.com pow.mjs
-zip pow.com pow.py
 
 mkdir -p /dist/macos
 cp pow.com pow-macos
@@ -29,3 +27,15 @@ mv -b pow-linux /dist/linux/pow
 
 mkdir -p /dist/windows
 mv -b pow.com /dist/windows/pow.exe
+
+if [ -e /dist/gitmodules/pow-dist-darwin/pow ]; then
+  cp /dist/macos/pow /dist/gitmodules/pow-dist-darwin/
+fi
+
+if [ -e /dist/gitmodules/pow-dist-linux/pow ]; then
+  cp /dist/linux/pow /dist/gitmodules/pow-dist-linux/
+fi
+
+if [ -e /dist/gitmodules/pow-windows/pow.exe ]; then
+  cp /dist/windows/pow.exe /dist/gitmodules/pow-windows/
+fi

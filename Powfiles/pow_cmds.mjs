@@ -1,9 +1,9 @@
 const dp = "--platform=linux/amd64";
 
 export function powBuildFull() {
-  if (!pow.windows) {
-    pow.fns.cosmoSaveDiff();
-  }
+  // if (!pow.windows) {
+  //   pow.fns.cosmoSaveDiff();
+  // }
   const cp = pow.spawnSync("docker", ["build", dp, "-t", "pow", "docker/"], {
     cwd: pow.baseDir,
     stdio: "inherit",
@@ -109,6 +109,41 @@ export function powUpdate() {
     cwd: pow.baseDir,
     stdio: "inherit",
   });
+}
+
+export function powGitPublishDistModules() {
+  let cp;
+  for (const [msg, cwd, exeName] of [
+    ["=== darwin ===", `${pow.baseDir}/dist/gitmodules/pow-dist-darwin`, "pow"],
+    ["=== linux ===", `${pow.baseDir}/dist/gitmodules/pow-dist-linux`, "pow"],
+    ["=== win32 ===", `${pow.baseDir}/dist/gitmodules/pow-windows`, "pow.exe"],
+  ]) {
+    print(msg);
+    const status = pow.spawnSync("git", ["status", "-s"], {
+      cwd: cwd,
+      encoding: "utf-8",
+      input: "",
+    });
+    if (status.stdout.length) {
+      cp = pow.spawnSync("git", ["commit", "-m", "Update pow", exeName], {
+        cwd: cwd,
+        input: "",
+        stdio: "inherit",
+      });
+      if (cp.status) {
+        return cp.status;
+      }
+    }
+    cp = pow.spawnSync("git", ["push", "origin", "main"], {
+      cwd: cwd,
+      input: "",
+      stdio: "inherit",
+    });
+    if (cp.status) {
+      return cp.status;
+    }
+    print();
+  }
 }
 
 // vim: tabstop=2 shiftwidth=2 expandtab
