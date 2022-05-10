@@ -150,7 +150,7 @@ function load() {
       encoding: "utf-8",
     });
     // TODO: Weird bug on Windows. In Git Bash, the output is printed to stderr
-    const cmds = (cp.stdout.trim() || cp.stderr.trim()).split(/[\n\r]/g);
+    const cmds = (cp.stdout.trim() || cp.stderr.trim()).split(/[\n\r]+/g);
 
     for (const cmd of cmds) {
       const key = _.camelCase(cmd);
