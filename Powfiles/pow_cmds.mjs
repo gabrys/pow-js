@@ -118,7 +118,7 @@ export function powGitPublishDistModules() {
     ["=== linux ===", `${pow.baseDir}/dist/gitmodules/pow-dist-linux`, "pow"],
     ["=== win32 ===", `${pow.baseDir}/dist/gitmodules/pow-windows`, "pow.exe"],
   ]) {
-    print(msg);
+    print(`${msg}\n`);
     const status = pow.spawnSync("git", ["status", "-s"], {
       cwd: cwd,
       encoding: "utf-8",

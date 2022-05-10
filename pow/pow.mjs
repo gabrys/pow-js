@@ -107,30 +107,6 @@ function load() {
   const powFilesPy = powFiles.filter((name) => name.endsWith(".py"));
   const powFilesMjs = powFiles.filter((name) => name.endsWith(".mjs"));
 
-  // Handle Python modules
-  if (powFilesPy.length === 1) {
-    pow.log.debug(`Loading Python Powfiles`);
-    const powPyPath = powFilesPy[0];
-    const ext = pow.windows ? ".cmd" : "";
-    const powRunnerPath = `py-pow-runner${ext}`;
-    const cp = spawnSync(powRunnerPath, [powPyPath, "--list-commands"], {
-      encoding: "utf-8",
-    });
-    const cmds = cp.stdout.trim().split("\n");
-    for (const cmd of cmds) {
-      if (cmd) {
-        pow.log.debug(`  * pow_${_.snakeCase(cmd)}`);
-        pow.fns[_.camelCase(cmd)] = (args) => {
-          pow.log.info(`Launching pow ${[cmd, ...args].join(" ")} via Python`);
-          const cp2 = spawnSync(powRunnerPath, [powPyPath, cmd, ...args], {
-            stdio: "inherit",
-          });
-          return cp2.status;
-        };
-      }
-    }
-  }
-
   // Handle JavaScript modules
   const promises = powFilesMjs.map((powFilePath) =>
     import(powFilePath).then(
@@ -159,6 +135,31 @@ function load() {
       }
     )
   );
+
+  // Handle Python modules
+  if (powFilesPy.length === 1) {
+    pow.log.debug(`Loading Python Powfiles`);
+    const powPyPath = powFilesPy[0];
+    const ext = pow.windows ? ".cmd" : "";
+    const powRunnerPath = `py-pow-runner${ext}`;
+    const cp = spawnSync(powRunnerPath, [powPyPath, "--list-commands"], {
+      encoding: "utf-8",
+    });
+    const cmds = cp.stdout.trim().split("\n");
+    for (const cmd of cmds) {
+      const key = _.camelCase(cmd);
+      if (cmd && !pow.fns[key]) {
+        pow.log.debug(`  * pow_${_.snakeCase(cmd)}`);
+        pow.fns[key] = (args) => {
+          pow.log.info(`Launching pow ${[cmd, ...args].join(" ")} via Python`);
+          const cp2 = spawnSync(powRunnerPath, [powPyPath, cmd, ...args], {
+            stdio: "inherit",
+          });
+          return cp2.status;
+        };
+      }
+    }
+  }
 
   return Promise.all(promises);
 }
