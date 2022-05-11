@@ -1,5 +1,3 @@
-<!-- @format -->
-
 Powfiles are files containing JavaScript modules defining commands that can be invoked as subcommands to the command `pow`.
 
 Example Powfile:
@@ -7,12 +5,14 @@ Example Powfile:
 ```
 // save as Powfile.mjs
 
-export function powSum(_ctx, args) {
+export class PowSum {
+  run(_ctx, args) {
     let total = 0;
     for (const arg of args) {
-        total += Number(arg);
+      total += Number(arg);
     }
     print(total);
+  }
 }
 
 ```
@@ -102,22 +102,24 @@ Example:
 ```
 // Save as Powfile.mjs
 
-export function powParseArgs(_ctx, args) {
+export class PowParseArgs {
+  run(_ctx, args) {
     const parsed = pow.parseArgv([
-        {name: "rainbows", alias: "r", type: Boolean}
+      {name: "rainbows", alias: "r", type: Boolean}
     ], args);
 
     if (parsed.args.length == 0) {
-        parsed.args = ["unicorns"];
+      parsed.args = ["unicorns"];
     }
 
     for (const arg of parsed.args) {
-        if (parsed.opts.rainbows) {
-            print(`🌈 ${arg} 🌈`);
-        } else {
-            print(arg);
-        }
+      if (parsed.opts.rainbows) {
+        print(`🌈 ${arg} 🌈`);
+      } else {
+        print(arg);
+      }
     }
+  }
 }
 ```
 

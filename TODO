@@ -1,11 +1,11 @@
 
+* example/Powfile.mjs: better examples
 * pow/pow.mjs: special treatment for when no Powfiles are found
 * pow/pow.mjs: pow -u to load user Powfile
 * pow/pow.mjs: pow -g (or -s?) to load system Powfile
 * pow/pow.mjs: pow -f file to load a specific Powfile
 * pow/pow.mjs: pow -d dir to load Powfiles from a specific directory
 * pow/pow.mjs: support embedding of Powfiles
-* pow/pow.mjs: Weird bug on Windows. In Git Bash, the output is printed to stderr
 * pow/pow.spawn.mjs: spawn: support skipping args
 * pow/pow.spawn.mjs: spawn: better support stdio: ignore
 * pow/pow.spawn.mjs: spawn: support timeout

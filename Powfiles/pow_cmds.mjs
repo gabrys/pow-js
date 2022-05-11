@@ -71,6 +71,7 @@ export class PowLint {
       "--write",
       "pow/pow*.mjs",
       "Powfiles/pow*.mjs",
+      "example/Powfile.mjs",
     ];
     return pow.spawnSync("docker", dockerArgs, {
       cwd: pow.baseDir,
