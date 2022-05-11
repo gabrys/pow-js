@@ -175,7 +175,7 @@ function load() {
         );
         pow.fns[key] = (args) => {
           pow.log.info(`Launching pow ${[name, ...args].join(" ")} via Python`);
-          const cp2 = spawnSync(powRunnerPath, [powPyPath, cmd, ...args], {
+          const cp2 = spawnSync(powRunnerPath, [powPyPath, name, ...args], {
             stdio: "inherit",
           });
           return cp2.status;
