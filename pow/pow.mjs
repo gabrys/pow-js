@@ -97,7 +97,6 @@ function load() {
   // TODO: pow -f file to load a specific Powfile
   // TODO: pow -d dir to load Powfiles from a specific directory
   // TODO: support embedding of Powfiles
-  // TODO: allow help for pow commands
   pow.log.debug("Running load()");
   const { baseDir, powFiles } = getPowFiles(pow.cwd);
   pow.baseDir = baseDir;
@@ -114,18 +113,29 @@ function load() {
         pow.log.debug(`Loading ${powFilePath}`);
         for (const fullKey in mod) {
           const fn = mod[fullKey];
-          const key = _.camelCase(fullKey.replace(/^pow/, ""));
+          const kebabFullKey = _.kebabCase(fullKey);
+          const key = _.camelCase(kebabFullKey.replace(/^pow-/, ""));
           const ctx = {
             powFile: powFilePath,
           };
 
           if (
-            fullKey.startsWith("pow") &&
+            kebabFullKey.startsWith("pow-") &&
             typeof fn === "function" &&
             !pow.fns[key]
           ) {
-            pow.fns[key] = (args) => fn(ctx, args);
-            pow.log.debug(`  * ${fullKey}`);
+            pow.log.debug(
+              `  * ${_.padEnd(fullKey, 30)}  -->  pow.fns["${key}"]`
+            );
+            pow.fns[key] = (args) => {
+              if (typeof fn.run === "function") {
+                return fn.run(ctx, args);
+              }
+              return fn(ctx, args);
+            };
+            pow.fns[key].helpArguments = fn.helpArguments || "";
+            pow.fns[key].helpShort = fn.helpShort || "";
+            pow.fns[key].hide = fn.hide;
           }
         }
       },
@@ -153,30 +163,51 @@ function load() {
     const cmds = (cp.stdout.trim() || cp.stderr.trim()).split(/[\n\r]+/g);
 
     for (const cmd of cmds) {
-      const key = _.camelCase(cmd);
-      if (cmd && !pow.fns[key]) {
-        pow.log.debug(`  * pow_${_.snakeCase(cmd)}`);
+      if (!cmd) {
+        continue;
+      }
+      const [name, ...help] = cmd.split(": ");
+      const helpShort = help.join(": ");
+      const key = _.camelCase(name);
+      if (!pow.fns[key]) {
+        pow.log.debug(
+          `  * pow_${_.padEnd(_.snakeCase(name), 26)}  -->  pow.fns["${key}"]`
+        );
         pow.fns[key] = (args) => {
-          pow.log.info(`Launching pow ${[cmd, ...args].join(" ")} via Python`);
+          pow.log.info(`Launching pow ${[name, ...args].join(" ")} via Python`);
           const cp2 = spawnSync(powRunnerPath, [powPyPath, cmd, ...args], {
             stdio: "inherit",
           });
           return cp2.status;
         };
+        pow.fns[key].helpShort = `[PY] ${helpShort}`;
+        pow.fns[key].helpArguments = "";
       }
     }
   });
 }
 
 function powListCommands() {
-  const cmd_help = [];
-  const cmds = Object.keys(pow.fns);
-  cmds.sort();
-  for (const cmd of cmds) {
-    if (!pow.fns[cmd].hide) {
-      cmd_help.push(`  pow ${_.kebabCase(cmd)}`);
+  const cmdTable = [];
+  const cmdKeys = Object.keys(pow.fns);
+  cmdKeys.sort();
+  for (const key of cmdKeys) {
+    const fn = pow.fns[key];
+    if (!fn.hide) {
+      cmdTable.push([
+        `  pow ${_.kebabCase(key)}  ${fn.helpArguments}`,
+        fn.helpShort,
+      ]);
     }
   }
+  const firstColLen = _.max(cmdTable.map((item) => item[0].length));
+
+  const cmdHelp = cmdTable.map((row) => {
+    const [firstCol, secondCol] = row;
+    const firstColPadded = _.padEnd(firstCol, firstColLen);
+    return `${firstColPadded}  ${secondCol}`;
+  });
+
   print(
     [
       "\nUsage: pow [OPTIONS] COMMAND [COMMAND PARAMETERS]",
@@ -186,7 +217,7 @@ function powListCommands() {
       "  -v       Set verbosity to INFO",
       "  -vv      Set verbosity to DEBUG",
       "\nCommands:",
-      ...cmd_help,
+      ...cmdHelp,
       "",
     ].join("\n")
   );
@@ -216,7 +247,11 @@ function main(parsedArgs) {
     pow.log.info(`Launching pow REPR`);
   } else {
     pow.log.info(`Launching ${fullCmd}`);
-    pow.log.debug(`Arguments`, ...cmdArgs);
+    if (cmdArgs.length) {
+      pow.log.debug(`Arguments`, ...cmdArgs);
+    } else {
+      pow.log.debug("Arguments: (empty)");
+    }
 
     const ret = fn(cmdArgs);
     std.exit(ret);

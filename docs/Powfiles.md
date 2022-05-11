@@ -38,7 +38,7 @@ Powfiles can access the following global objects/functions:
 
 - `pow` (see below)
 - `print` / `console.log`
-- `_` (https://underscorejs.org/)
+- `_` (https://lodash.com/)
 
 You can also import QuickJS's `os` and `std` modules:
 
