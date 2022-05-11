@@ -200,12 +200,23 @@ function powListCommands() {
       ]);
     }
   }
-  const firstColLen = _.max(cmdTable.map((item) => item[0].length));
+
+  const firstColLen = _.max(cmdTable.map((item) => {
+    const len = item[0].length;
+    if (len > 40) {
+      return 0;
+    }
+    return len;
+  }));
 
   const cmdHelp = cmdTable.map((row) => {
-    const [firstCol, secondCol] = row;
-    const firstColPadded = _.padEnd(firstCol, firstColLen);
-    return `${firstColPadded}  ${secondCol}`;
+    let [firstCol, secondCol] = row;
+    if (firstCol.length > 40) {
+      secondCol = `\n${_.padEnd("", firstColLen)}  ${secondCol}`;
+    } else {
+      firstCol = _.padEnd(firstCol, firstColLen);
+    }
+    return `${firstCol}  ${secondCol}`;
   });
 
   print(
