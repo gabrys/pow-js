@@ -1,8 +1,8 @@
 const dp = "--platform=linux/amd64";
 
 export class PowBuild {
-  static helpShort = "Build pow in Docker";
-  static run() {
+  helpShort = "Build pow in Docker";
+  run() {
     // if (!pow.windows) {
     //   pow.fns.cosmoSaveDiff();
     // }
@@ -13,13 +13,51 @@ export class PowBuild {
     if (cp.status !== 0) {
       return cp.status;
     }
-    return pow.fns.update();
+    return pow.fns.update.run();
+  }
+}
+
+export class PowGitPublishDistModules {
+  helpShort = "Push updated git modules containing compiled binaries";
+  run() {
+    let cp;
+    for (const [msg, cwd, exeName] of [
+      ["darwin", `${pow.baseDir}/dist/gitmodules/pow-dist-darwin`, "pow"],
+      ["linux", `${pow.baseDir}/dist/gitmodules/pow-dist-linux`, "pow"],
+      ["win32", `${pow.baseDir}/dist/gitmodules/pow-windows`, "pow.exe"],
+    ]) {
+      print(`=== ${msg} ===\n`);
+      const status = pow.spawnSync("git", ["status", "-s"], {
+        cwd: cwd,
+        encoding: "utf-8",
+        input: "",
+      });
+      if (status.stdout.length) {
+        cp = pow.spawnSync("git", ["commit", "-m", "Update pow", exeName], {
+          cwd: cwd,
+          input: "",
+          stdio: "inherit",
+        });
+        if (cp.status) {
+          return cp.status;
+        }
+      }
+      cp = pow.spawnSync("git", ["push", "origin", "main"], {
+        cwd: cwd,
+        input: "",
+        stdio: "inherit",
+      });
+      if (cp.status) {
+        return cp.status;
+      }
+      print();
+    }
   }
 }
 
 export class PowLint {
-  static helpShort = "Lint pow JS files";
-  static run() {
+  helpShort = "Lint pow JS files";
+  run() {
     const dir = pow.baseDir;
     const gid = pow.gid ?? 1000;
     const uid = pow.uid ?? 1000;
@@ -42,8 +80,8 @@ export class PowLint {
 }
 
 export class PowPullJsLibs {
-  static helpShort = "Pull JavaScript libraries bundled with pow";
-  static run() {
+  helpShort = "Pull JavaScript libraries bundled with pow";
+  run() {
     const gid = pow.gid ?? 1000;
     const uid = pow.uid ?? 1000;
     const dockerArgs = [
@@ -82,8 +120,8 @@ export class PowPullJsLibs {
 }
 
 export class PowShell {
-  static helpShort = "Get a shell in the container used to build pow";
-  static run(_ctx, args) {
+  helpShort = "Get a shell in the container used to build pow";
+  run(_ctx, args) {
     const uid = pow.uid || 1000;
     const gid = pow.gid || 1000;
     const root = args.includes("--root");
@@ -106,8 +144,8 @@ export class PowShell {
 }
 
 export class PowUpdate {
-  static helpShort = "Update pow binaries with updated JavaScript files";
-  static run() {
+  helpShort = "Update pow binaries with updated JavaScript files";
+  run() {
     const gid = pow.gid ?? 1000;
     const uid = pow.uid ?? 1000;
     const dockerArgs = [
@@ -123,44 +161,6 @@ export class PowUpdate {
       cwd: pow.baseDir,
       stdio: "inherit",
     });
-  }
-}
-
-export class PowGitPublishDistModules {
-  static helpShort = "Push updated git modules containing compiled binaries";
-  static run() {
-    let cp;
-    for (const [msg, cwd, exeName] of [
-      ["darwin", `${pow.baseDir}/dist/gitmodules/pow-dist-darwin`, "pow"],
-      ["linux", `${pow.baseDir}/dist/gitmodules/pow-dist-linux`, "pow"],
-      ["win32", `${pow.baseDir}/dist/gitmodules/pow-windows`, "pow.exe"],
-    ]) {
-      print(`=== ${msg} ===\n`);
-      const status = pow.spawnSync("git", ["status", "-s"], {
-        cwd: cwd,
-        encoding: "utf-8",
-        input: "",
-      });
-      if (status.stdout.length) {
-        cp = pow.spawnSync("git", ["commit", "-m", "Update pow", exeName], {
-          cwd: cwd,
-          input: "",
-          stdio: "inherit",
-        });
-        if (cp.status) {
-          return cp.status;
-        }
-      }
-      cp = pow.spawnSync("git", ["push", "origin", "main"], {
-        cwd: cwd,
-        input: "",
-        stdio: "inherit",
-      });
-      if (cp.status) {
-        return cp.status;
-      }
-      print();
-    }
   }
 }
 
