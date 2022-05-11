@@ -186,11 +186,11 @@ function load() {
             typeof cmdClass === "function" &&
             !pow.fns[key]
           ) {
-            pow.log.debug(
-              `  * ${_.padEnd(fullKey, 30)}  -->  pow.fns.${key}`
-            );
+            pow.log.debug(`  * ${_.padEnd(fullKey, 30)}  -->  pow.fns.${key}`);
             if (typeof cmdClass.prototype.run !== "function") {
-              throw new Error(`${fullKey} doesn't have method "run" in ${powFilePath}`);
+              throw new Error(
+                `${fullKey} doesn't have method "run" in ${powFilePath}`
+              );
             }
             const cmd = new cmdClass();
             pow.fns[key] = {
