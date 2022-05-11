@@ -17,6 +17,35 @@ export class PowBuild {
   }
 }
 
+export class PowMakeQjs {
+  helpShort = "Get a QuickJS universal binary";
+  run() {
+    const dir = pow.baseDir;
+    const gid = pow.gid ?? 1000;
+    const uid = pow.uid ?? 1000;
+    const dockerArgs = [
+      "run",
+      dp,
+      "--rm",
+      `--user=${uid}:${gid}`,
+      `--volume=${dir}/dist:/dist`,
+      "pow",
+      "cp",
+      "/build/qjs.com",
+      "/dist/qjs.com",
+    ];
+    const cp = pow.spawnSync("docker", dockerArgs, {
+      cwd: dir,
+      stdio: "inherit",
+    });
+    if (cp.status !== 0) {
+      pow.ERROR("Making qjs.com failed");
+      return cp.status;
+    }
+    print("File ready at dist/qjs.com");
+  }
+}
+
 export class PowGitPublishDistModules {
   helpShort = "Push updated git modules containing compiled binaries";
   run() {
