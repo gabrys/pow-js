@@ -7,8 +7,10 @@ RUN git clone https://github.com/jart/cosmopolitan && cd cosmopolitan && git res
 ADD build-qjs /bin/
 RUN build-qjs /build/qjs.com
 
-ADD qjs.diff .
-RUN patch cosmopolitan/third_party/quickjs/qjs.c qjs.diff
+ADD qjs_pow.c .
+RUN sed 's/^int main(/int orig_main(/' -i cosmopolitan/third_party/quickjs/qjs.c \
+    && cat qjs_pow.c >> cosmopolitan/third_party/quickjs/qjs.c
+
 RUN build-qjs /build/pow_runner.com
 
 ADD build-pow /bin/

@@ -1,11 +1,9 @@
 const dp = "--platform=linux/amd64";
+const gid = pow.gid ?? 1000;
+const uid = pow.uid ?? 1000;
+const dir = pow.baseDir;
 
-export class PowBuild {
-  helpShort = "Build pow in Docker";
-  run() {
-    // if (!pow.windows) {
-    //   pow.fns.cosmoSaveDiff();
-    // }
+function buildPowRunner() {
     const cp = pow.spawnSync("docker", ["build", dp, "-t", "pow", "docker/"], {
       cwd: pow.baseDir,
       stdio: "inherit",
@@ -13,16 +11,24 @@ export class PowBuild {
     if (cp.status !== 0) {
       return cp.status;
     }
-    return pow.fns.update.run();
+  return 0;
+}
+
+export class PowBuild {
+  helpShort = "Build pow in Docker";
+  run() {
+    return buildPowRunner() || pow.fns.update.run();
   }
 }
 
 export class PowMakeQjs {
   helpShort = "Get a QuickJS universal binary";
   run() {
-    const dir = pow.baseDir;
-    const gid = pow.gid ?? 1000;
-    const uid = pow.uid ?? 1000;
+    const status = buildPowRunner();
+    if (status !== 0) {
+      return status;
+    }
+
     const dockerArgs = [
       "run",
       dp,
@@ -112,8 +118,6 @@ export class PowLint {
 export class PowPullJsLibs {
   helpShort = "Pull JavaScript libraries bundled with pow";
   run() {
-    const gid = pow.gid ?? 1000;
-    const uid = pow.uid ?? 1000;
     const dockerArgs = [
       "run",
       "--rm",
@@ -152,16 +156,14 @@ export class PowPullJsLibs {
 export class PowShell {
   helpShort = "Get a shell in the container used to build pow";
   run(_ctx, args) {
-    const uid = pow.uid || 1000;
-    const gid = pow.gid || 1000;
     const root = args.includes("--root");
     const userArgs = root ? [] : [`--user=${uid}:${gid}`];
     const dockerArgs = [
       "run",
       "--rm",
       ...userArgs,
-      `--volume=${pow.baseDir}/pow/:/pow/`,
-      `--volume=${pow.baseDir}/dist/:/dist/`,
+      `--volume=${dir}/pow/:/pow/`,
+      `--volume=${dir}/dist/:/dist/`,
       "-it",
       "pow",
     ];
@@ -176,14 +178,12 @@ export class PowShell {
 export class PowUpdate {
   helpShort = "Update pow binaries with updated JavaScript files";
   run() {
-    const gid = pow.gid ?? 1000;
-    const uid = pow.uid ?? 1000;
     const dockerArgs = [
       "run",
       "--rm",
       `--user=${uid}:${gid}`,
-      `--volume=${pow.baseDir}/pow/:/pow/`,
-      `--volume=${pow.baseDir}/dist/:/dist/`,
+      `--volume=${dir}/pow/:/pow/`,
+      `--volume=${dir}/dist/:/dist/`,
       "pow",
       "build-pow",
     ];
