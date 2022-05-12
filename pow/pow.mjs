@@ -86,7 +86,8 @@ function parseArgv(argv) {
       { name: "repl", type: Boolean },
       { name: "verbose", alias: "v", multiple: true, type: Boolean },
     ],
-    argv
+    argv,
+    { cmdName: "pow" }
   );
   const verbose = opts.verbose || [];
 

@@ -4,13 +4,13 @@ const uid = pow.uid ?? 1000;
 const dir = pow.baseDir;
 
 function buildPowRunner() {
-    const cp = pow.spawnSync("docker", ["build", dp, "-t", "pow", "docker/"], {
-      cwd: pow.baseDir,
-      stdio: "inherit",
-    });
-    if (cp.status !== 0) {
-      return cp.status;
-    }
+  const cp = pow.spawnSync("docker", ["build", dp, "-t", "pow", "docker/"], {
+    cwd: pow.baseDir,
+    stdio: "inherit",
+  });
+  if (cp.status !== 0) {
+    return cp.status;
+  }
   return 0;
 }
 
@@ -91,11 +91,8 @@ export class PowGitPublishDistModules {
 }
 
 export class PowLint {
-  helpShort = "Lint pow JS files";
+  helpShort = "Lint pow JS and C files";
   run() {
-    const dir = pow.baseDir;
-    const gid = pow.gid ?? 1000;
-    const uid = pow.uid ?? 1000;
     const dockerArgs = [
       "run",
       dp,
@@ -104,6 +101,7 @@ export class PowLint {
       `--volume=${dir}:/work`,
       "tmknom/prettier",
       "--write",
+      "docker/pow_qjs.c",
       "pow/pow*.mjs",
       "Powfiles/pow*.mjs",
       "example/Powfile.mjs",
@@ -154,10 +152,14 @@ export class PowPullJsLibs {
 }
 
 export class PowShell {
+  helpArguments = "[--root]";
   helpShort = "Get a shell in the container used to build pow";
-  run(_ctx, args) {
-    const root = args.includes("--root");
-    const userArgs = root ? [] : [`--user=${uid}:${gid}`];
+  run(_ctx, argv) {
+    const { opts } = pow.parseArgv([{ name: "root", type: Boolean }], argv, {
+      cmdName: "pow shell",
+      maxArgs: 0,
+    });
+    const userArgs = opts.root ? [] : [`--user=${uid}:${gid}`];
     const dockerArgs = [
       "run",
       "--rm",

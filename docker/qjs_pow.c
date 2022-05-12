@@ -9,10 +9,10 @@
 
 void concat_path_file(const char *path, const char *filename, char *buffer)
 {
-	if (!path)
-		path = "";
-	while (*filename == '/')
-		filename++;
+    if (!path)
+        path = "";
+    while (*filename == '/')
+        filename++;
 
     *buffer = '\0';
     strncat(buffer, path, 1000);
@@ -23,46 +23,47 @@ void concat_path_file(const char *path, const char *filename, char *buffer)
 int file_is_executable(const char *name)
 {
     int X_OK = 1;
-	struct stat s;
-	return (!access(name, X_OK) && !stat(name, &s) && S_ISREG(s.st_mode));
+    struct stat s;
+    return (!access(name, X_OK) && !stat(name, &s) && S_ISREG(s.st_mode));
 }
 
 int find_executable(const char *filename, char *p, char *buffer)
 {
-	char *n;
-	while (p) {
-		int ex;
-
-		n = strchr(p, ':');
-		if (n) *n = '\0';
-
-		concat_path_file(
-			p[0] ? p : ".", /* handle "::" case */
-			filename,
-            buffer
-		);
-		ex = file_is_executable(buffer);
-		if (n) *n++ = ':';
-		if (ex) {
-			return 1;
-		}
-		p = n;
-	} /* on loop exit p == NULL */
-	return 0;
+    char *n;
+    while (p)
+    {
+        int ex;
+        n = strchr(p, ':');
+        if (n)
+            *n = '\0';
+        concat_path_file(
+            p[0] ? p : ".", /* handle "::" case */
+            filename,
+            buffer);
+        ex = file_is_executable(buffer);
+        if (n)
+            *n++ = ':';
+        if (ex)
+            return 1;
+        p = n;
+    } /* on loop exit p == NULL */
+    return 0;
 }
 
 // New main
 
 int main(int argc, char **argv)
 {
-    if (!file_is_executable(argv[0])) {
+    if (!file_is_executable(argv[0]))
+    {
 
         // On macOS, argv[0] is not normalized
         // This trips Cosmopolitan's custom file handler for files in /zip/
         // Here we're re-runing the command with the full path to work around:
 
         char cmdpath[1111];
-        if (find_executable(argv[0], getenv("PATH"), cmdpath)) {
+        if (find_executable(argv[0], getenv("PATH"), cmdpath))
+        {
             argv[0] = cmdpath;
             execvp(cmdpath, argv);
         }
@@ -70,63 +71,28 @@ int main(int argc, char **argv)
 
     JSRuntime *rt;
     JSContext *ctx;
-    int optind;
-    int verbosity = 0;
     int repl = 0;
-    int help = 0;
 
-    /* cannot use getopt because we want to pass the command line to
-       the script */
-    optind = 1;
-    while (optind < argc && *argv[optind] == '-') {
-        char *arg = argv[optind] + 1;
-        const char *longopt = "";
-        /* a single - is not an option, it also stops argument scanning */
-        if (!*arg)
+    for (int optind = 1; optind < argc; optind++)
+    {
+        char *opt = argv[optind];
+        if (*opt != '-' || !strcmp(opt, "-") || !strcmp(opt, "--"))
             break;
-        optind++;
-        if (*arg == '-') {
-            longopt = arg + 1;
-            arg += strlen(arg);
-            /* -- stops argument scanning */
-            if (!*longopt)
-                break;
-        }
-        for (; *arg || *longopt; longopt = "") {
-            char opt = *arg;
-            if (opt)
-                arg++;
-
-            if (opt == 'v') {
-                verbosity++;
-                continue;
-            }
-            if (opt == 'r' || !strcmp(longopt, "repl")) {
-                repl = 1;
-                continue;
-            }
-            if (opt == 'h' || !strcmp(longopt, "help")) {
-                help = 1;
-                continue;
-            }
-            if (opt) {
-                fprintf(stderr, "pow: unknown option '-%c'\n", opt);
-            } else {
-                fprintf(stderr, "pow: unknown option '--%s'\n", longopt);
-            }
-            exit(1);
-        }
+        if (!strcmp(opt, "--repl"))
+            repl = 1;
     }
 
     rt = JS_NewRuntime();
-    if (!rt) {
+    if (!rt)
+    {
         fprintf(stderr, "pow: cannot allocate JS runtime\n");
         exit(2);
     }
     js_std_set_worker_new_context_func(JS_NewCustomContext);
     js_std_init_handlers(rt);
     ctx = JS_NewCustomContext(rt);
-    if (!ctx) {
+    if (!ctx)
+    {
         fprintf(stderr, "pow: cannot allocate JS context\n");
         exit(2);
     }
@@ -146,7 +112,8 @@ int main(int argc, char **argv)
         goto fail;
     js_std_loop(ctx);
 
-    if (repl) {
+    if (repl)
+    {
         js_std_eval_binary(ctx, qjsc_repl, qjsc_repl_size, 0);
         js_std_loop(ctx);
     }
@@ -156,7 +123,7 @@ int main(int argc, char **argv)
     JS_FreeRuntime(rt);
 
     return 0;
- fail:
+fail:
     js_std_free_handlers(rt);
     JS_FreeContext(ctx);
     JS_FreeRuntime(rt);

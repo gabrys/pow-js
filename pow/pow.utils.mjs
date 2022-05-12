@@ -3,6 +3,46 @@ import * as std from "std";
 import commandLineArgs from "./lib.args.mjs";
 import { windows, windowsCwd } from "./pow.windows.mjs";
 
+function extendedParseArgs(definitions, argv, parseOpts) {
+  parseOpts.minArgs = parseOpts.minArgs ?? 0;
+  parseOpts.maxArgs = parseOpts.maxArgs ?? Infinity;
+
+  const { _unknown, ...opts } = commandLineArgs(definitions, {
+    argv: argv,
+    stopAtFirstUnknown: true,
+  });
+
+  const args = _unknown || [];
+  const firstArg = args[0] || "";
+
+  // Parse "-", "--" and error on unknown options
+  if (firstArg.startsWith("-")) {
+    if (firstArg === "--") {
+      args.shift();
+    } else if (firstArg !== "-") {
+      throw new Error(`Unknown option: ${firstArg}`);
+    }
+  }
+
+  if (args.length < parseOpts.minArgs) {
+    throw new Error(
+      `Too few arguments. Expected at least ${parseOpts.minArgs}.` +
+        ` Got: ${JSON.stringify(args)}`
+    );
+  }
+  if (args.length > parseOpts.maxArgs) {
+    throw new Error(
+      `Too many arguments. Expected at most ${parseOpts.maxArgs}.` +
+        ` Got: ${JSON.stringify(args)}`
+    );
+  }
+
+  return {
+    args: args,
+    opts: opts || {},
+  };
+}
+
 export class PowLogger {
   constructor(verbosity) {
     this.verbosity = verbosity;
@@ -94,29 +134,18 @@ export class PowUtils {
     return [dirs, files];
   };
 
-  parseArgv = (definitions, argv) => {
-    // TODO: improve error message for pow --abc
-    const { _unknown, ...opts } = commandLineArgs(definitions, {
-      argv: argv,
-      stopAtFirstUnknown: true,
-    });
-
-    const args = _unknown || [];
-    const firstArg = args[0] || "";
-
-    // Parse "-", "--" and error on unknown options
-    if (firstArg.startsWith("-")) {
-      if (firstArg === "--") {
-        args.shift();
-      } else if (firstArg !== "-") {
-        throw new Error(`Unknown option: ${firstArg}`);
+  parseArgv = (definitions, argv, parseOpts) => {
+    parseOpts = parseOpts || {};
+    try {
+      return extendedParseArgs(definitions, argv, parseOpts);
+    } catch (ex) {
+      if (parseOpts.cmdName) {
+        std.err.printf("%s: %s\n", parseOpts.cmdName, ex.message);
+      } else {
+        std.err.printf("%s\n", ex.message);
       }
+      std.exit(1);
     }
-
-    return {
-      args: args,
-      opts: opts || {},
-    };
   };
 
   readFile = (path) => {
