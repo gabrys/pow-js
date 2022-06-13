@@ -15,8 +15,13 @@ const pow = {
 
 pow.runPowPy = function runPowPy(powPyPath, cmd, args) {
   const cmdArgs = [powPyPath, cmd, ...args];
+  const env = std.getenviron();
   pow.log.info(`Launching py-pow-runner ${cmdArgs.join(" ")}`);
   const cp = spawnSync("py-pow-runner", cmdArgs, {
+    env: {
+      SILENCE_POW_DEPRECATION_WARNING: "1",
+      ...env,
+    },
     stdio: "inherit",
   });
   return cp.status;

@@ -91,7 +91,7 @@ export class PowGitPublishDistModules {
 }
 
 export class PowLint {
-  helpShort = "Lint pow JS and C files";
+  helpShort = "Lint pow JS files";
   run() {
     const dockerArgs = [
       "run",
@@ -101,7 +101,6 @@ export class PowLint {
       `--volume=${dir}:/work`,
       "tmknom/prettier",
       "--write",
-      "docker/pow_qjs.c",
       "pow/pow*.mjs",
       "Powfiles/pow*.mjs",
       "example/Powfile.mjs",
