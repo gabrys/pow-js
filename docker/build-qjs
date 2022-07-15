@@ -3,8 +3,8 @@
 set -euo pipefail
 
 need_demzify() {
-  cp -n /build/cosmopolitan/build/sanitycheck2 /build/sanitycheck2
-  [ 123 -ne $(bash -c '/build/sanitycheck2 ; echo $?') ]
+  cp -n /build/cosmopolitan/build/bootstrap/apetest.com /build/apetest.com
+  [ "$(/build/apetest.com)" != success ]
 }
 
 demzify() {
@@ -15,12 +15,11 @@ demzify() {
   echo  ====================
   echo
 
-  echo 'exit 123' > /build/cosmopolitan/build/sanitycheck2
   sed s/MZqFpD/Ue6OCi/g -i $(find_com)
 }
 
 find_com() {
-  find /build/cosmopolitan/ -name '*.com' -not -name qjs.com
+  find /build/cosmopolitan/ -name '*.com' -not -name qjs.com -not -name apetest.com
 }
 
 has_mz_files() {

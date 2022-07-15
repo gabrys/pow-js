@@ -3,7 +3,7 @@ FROM debian
 RUN apt update && apt install -y build-essential git zip && date=2022-04-23
 
 WORKDIR /build/
-RUN git clone https://github.com/jart/cosmopolitan && cd cosmopolitan && git reset --hard 9a6bd304a58b89277b8a2d490bfda9fd12d19370
+RUN git clone https://github.com/jart/cosmopolitan && cd cosmopolitan && git reset --hard 0a589add4167c1b5873eddd2904569e90bf4f27c
 ADD build-qjs /bin/
 RUN build-qjs /build/qjs.com
 

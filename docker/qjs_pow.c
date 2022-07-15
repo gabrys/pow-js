@@ -1,8 +1,10 @@
 // This file will be included to qjs.c
 // and the original main function will be renamed to orig_main
 
+#include "libc/calls/struct/stat.h"
 #include "libc/isystem/string.h"
 #include "libc/isystem/unistd.h"
+#include "libc/sysv/consts/s.h"
 
 // A few functions borrowed from busybox (and modified a bit)
 // (This is to find the equivalent of `which pow`)
