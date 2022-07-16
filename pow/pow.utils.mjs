@@ -96,7 +96,11 @@ export class PowLogger {
 
 export class PowUtils {
   constructor() {
-    if (windows) {
+    if (os.platform === "win32") {
+      this.cwd = os.getcwd()[0].replace(/\\/g, "/");
+      this.platform = "win32";
+      this.windows = true;
+    } else if (windows) {
       this.cwd = windowsCwd;
       this.platform = "win32";
       this.windows = true;

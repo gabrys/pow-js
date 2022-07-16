@@ -2,6 +2,14 @@
 
 set -euo pipefail
 
+type=""
+file=""
+
+if [ "$#" -ge 2 ]; then
+  type="$1"  # win/cosmo
+  file="$2"
+fi
+
 need_demzify() {
   cp -n /build/cosmopolitan/build/bootstrap/apetest.com /build/apetest.com
   [ "$(/build/apetest.com)" != success ]
@@ -15,7 +23,15 @@ demzify() {
   echo  ====================
   echo
 
-  sed s/MZqFpD/Ue6OCi/g -i $(find_com)
+  for comfile in $(find_com); do
+    # Replace the magic MZ marker from the file
+    # but keep the modification time via touch -r
+
+    cp "$comfile" "$comfile.demz"
+    sed s/MZqFpD/Ue6OCi/g -i "$comfile.demz"
+    touch -r "$comfile" "$comfile.demz"
+    mv "$comfile.demz" "$comfile"
+  done
 }
 
 find_com() {
@@ -34,18 +50,38 @@ make_qjs() {
   make -j6 o//third_party/quickjs/qjs.com
 }
 
-cd /build/cosmopolitan/
+make_qjs_exe() {
+  make -j6 CONFIG_WIN32=y LDEXPORT="-static -s -pthread -lpthread" qjs.exe
+}
 
-if need_demzify; then
-  for i in {1..5}; do
-    demzify $i
-    make_qjs || true
-    if ! has_mz_files; then
-      break
-    fi
-  done
+if [ "$type" = win ]; then
+
+  cd /build/windows/quickjs/
+  make_qjs_exe
+  cp qjs.exe "$file"
+
+elif [ "$type" = cosmo ]; then
+
+  cd /build/cosmopolitan/
+
+  if need_demzify; then
+    for i in {1..5}; do
+      demzify $i
+      make_qjs || true
+      if ! has_mz_files; then
+        break
+      fi
+    done
+  fi
+
+  make_qjs
+  cp o/third_party/quickjs/qjs.com "$file"
+
+else
+
+  echo "Usage:
+    $0 cosmo /target/file.com
+    $0 win /target/file.exe" 1>&2
+  exit 1
+
 fi
-
-make_qjs
-cp o/third_party/quickjs/qjs.com "$1"
-
