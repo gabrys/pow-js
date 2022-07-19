@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -euo pipefail
+
+cd /build/windows/reproc/
+CC=x86_64-w64-mingw32-gcc cmake -D WIN32=on -B build
+cmake --build build
+cmake --install build --prefix /usr/x86_64-w64-mingw32

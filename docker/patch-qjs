@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 target=/build/windows/quickjs/qjs.c
 
 sed 's/^int main(/int orig_main(/' -i "$target" \

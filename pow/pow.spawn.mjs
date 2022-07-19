@@ -85,8 +85,8 @@ export function spawnSync(cmd, args, inOpts) {
       argv0 <string> Explicitly set the value of argv[0] sent to the child process. This will be set to command if not specified.
     + stdio <string> | <Array> Child's stdio configuration.
     + env <Object> Environment key-value pairs. Default: process.env.
-    + uid <number> Sets the user identity of the process (see setuid(2)).
-    + gid <number> Sets the group identity of the process (see setgid(2)).
+      uid <number> Sets the user identity of the process (see setuid(2)).
+      gid <number> Sets the group identity of the process (see setgid(2)).
       timeout <number> In milliseconds the maximum amount of time the process is allowed to run. Default: undefined.
       killSignal <string> | <integer> The signal value to be used when the spawned process will be killed. Default: 'SIGTERM'.
       maxBuffer <number> Largest amount of data in bytes allowed on stdout or stderr. If exceeded, the child process is terminated and any output is truncated. See caveat at maxBuffer and Unicode. Default: 1024 * 1024.
@@ -101,21 +101,14 @@ export function spawnSync(cmd, args, inOpts) {
   // TODO: spawn: better support stdio: ignore
   // TODO: spawn: support timeout
 
-  const supportedOpts = [
-    "cwd",
-    "input",
-    "stdio",
-    "env",
-    "uid",
-    "gid",
-    "encoding",
-    "shell",
-  ];
+  const supportedOpts = ["cwd", "env", "encoding", "input", "shell", "stdio"];
   const unsupportedOpts = [
     "argv0",
+    "gid",
     "timeout",
     "killSignal",
     "maxBuffer",
+    "uid",
     "windowsVerbatimArguments",
     "windowsHide",
   ];
@@ -176,8 +169,6 @@ export function spawnSync(cmd, args, inOpts) {
   }
 
   opts.env = inOpts.env;
-  opts.uid = inOpts.uid;
-  opts.gid = inOpts.gid;
 
   const fullCmd = buildCommand(cmd, args, inOpts.shell);
 

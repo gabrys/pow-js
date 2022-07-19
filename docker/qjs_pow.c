@@ -56,6 +56,167 @@ int find_executable(const char *filename, char *p, char *buffer)
 
 #endif /* COSMO */
 
+#if defined(_WIN32)
+
+// On Windows we'll use reproc to implement a substitution for the missing os.exec
+
+#include <reproc/run.h>
+
+/* reproc.run(cmd, cwd, env, input, stderr, stdout, timeout) -> {exitcode, stderr, stdout} */
+static JSValue js_reproc_run(JSContext *ctx, JSValueConst this_val,
+                             int argc, JSValueConst *argv)
+{
+    JSValueConst arg_cmd = argv[0];
+    JSValueConst arg_cwd = argv[1];
+    // JSValueConst arg_env = argv[2];
+    JSValueConst arg_stderr = argv[3];
+    JSValueConst arg_stdout = argv[4];
+    // JSValueConst arg_timeout = argv[5];
+
+    JSValue val, ret_val;
+    uint32_t exec_argc, i;
+    int ret;
+
+    // cmd:
+    const char **exec_argv, *str;
+
+    val = JS_GetPropertyStr(ctx, arg_cmd, "length");
+    if (JS_IsException(val))
+        return JS_EXCEPTION;
+    ret = JS_ToUint32(ctx, &exec_argc, val);
+    JS_FreeValue(ctx, val);
+    if (ret)
+        return JS_EXCEPTION;
+    /* arbitrary limit to avoid overflow */
+    if (exec_argc < 1 || exec_argc > 65535)
+    {
+        return JS_ThrowTypeError(ctx, "invalid number of arguments");
+    }
+    exec_argv = js_mallocz(ctx, sizeof(exec_argv[0]) * (exec_argc + 1));
+    if (!exec_argv)
+        return JS_EXCEPTION;
+    for (i = 0; i < exec_argc; i++)
+    {
+        val = JS_GetPropertyUint32(ctx, arg_cmd, i);
+        if (JS_IsException(val))
+            goto exception;
+        str = JS_ToCString(ctx, val);
+        JS_FreeValue(ctx, val);
+        if (!str)
+            goto exception;
+        exec_argv[i] = str;
+    }
+    exec_argv[exec_argc] = NULL;
+
+    // cwd:
+    const char *cwd = JS_ToCString(ctx, arg_cwd);
+    if (!cwd)
+        goto exception;
+    printf("cwd: %s\n", cwd);
+
+    // env:
+
+    // ????
+
+    // stderr
+    // REPROC_REDIRECT redirect_err;
+    const char *stderr_ = JS_ToCString(ctx, arg_stderr);
+    if (!stderr_)
+        goto exception;
+    printf("stderr: %s\n", stderr_);
+    // if (strcmp("pipe", stderr_) == 0) {
+    //     redirect_err = REPROC_REDIRECT_PIPE;
+    // }
+
+    // stdout
+    const char *stdout_ = JS_ToCString(ctx, arg_stdout);
+    if (!stdout_)
+        goto exception;
+    printf("stdout: %s\n", stdout_);
+
+    char *p_stdout = NULL;
+    char *p_stderr = NULL;
+
+    int rr = reproc_run_ex(
+        exec_argv,
+        (reproc_options){
+            .working_directory = cwd,
+            // .redirect.err = redirect_err,
+        },
+        reproc_sink_string(&p_stdout),
+        reproc_sink_string(&p_stderr));
+
+    if (rr < 0)
+        goto exception;
+
+    // Check that the while loop stopped because the output stream of the child
+    // process was closed and not because of any other error.
+    // if (rr != REPROC_EPIPE)
+    //     goto exception;
+
+    printf("stdout: %s\n", p_stdout);
+    printf("stderr: %s\n", p_stderr);
+
+    // Wait for the process to exit. This should always be done since some systems
+    // (POSIX) don't clean up system resources allocated to a child process until
+    // the parent process explicitly waits for it after it has exited.
+
+    ret_val = JS_NewInt32(ctx, rr);
+
+done:
+    // JS_FreeCString(ctx, file);
+    // JS_FreeCString(ctx, cwd);
+    for (i = 0; i < exec_argc; i++)
+        JS_FreeCString(ctx, exec_argv[i]);
+    js_free(ctx, exec_argv);
+    // if (envp != environ) {
+    //     char **p;
+    //     p = envp;
+    //     while (*p != NULL) {
+    //         js_free(ctx, *p);
+    //         p++;
+    //     }
+    //     js_free(ctx, envp);
+    // }
+    return ret_val;
+exception:
+    ret_val = JS_EXCEPTION;
+    goto done;
+}
+
+#endif
+
+// Boilerplate code ro wrap the function above in a QuickJS module:
+
+static const JSCFunctionListEntry js_reproc_funcs[] = {
+#if defined(_WIN32)
+    JS_CFUNC_DEF("run", 6, js_reproc_run),
+#endif
+};
+
+static int
+js_reproc_init(JSContext *ctx, JSModuleDef *m)
+{
+    return JS_SetModuleExportList(ctx, m, js_reproc_funcs, countof(js_reproc_funcs));
+}
+
+JSModuleDef *js_init_module_reproc(JSContext *ctx, const char *module_name)
+{
+    JSModuleDef *m;
+    m = JS_NewCModule(ctx, module_name, js_reproc_init);
+    if (!m)
+        return NULL;
+    JS_AddModuleExportList(ctx, m, js_reproc_funcs, countof(js_reproc_funcs));
+    return m;
+}
+
+static JSContext *POW_JS_NewCustomContext(JSRuntime *rt)
+{
+    JSContext *ctx = JS_NewCustomContext(rt);
+    js_init_module_reproc(ctx, "reproc");
+    return ctx;
+}
+
 // New main
 
 int main(int argc, char **argv)
@@ -101,10 +262,11 @@ int main(int argc, char **argv)
     int len = strlen(filename);
     int extstart = len - 4;
 
-    if (extstart > 0 && (0 == strcmp(filename + extstart, ".exe"))) {
-        filename[extstart+1] = 'm';
-        filename[extstart+2] = 'j';
-        filename[extstart+3] = 's';
+    if (extstart > 0 && (0 == strcmp(filename + extstart, ".exe")))
+    {
+        filename[extstart + 1] = 'm';
+        filename[extstart + 2] = 'j';
+        filename[extstart + 3] = 's';
     }
 
     for (int i = 0; i < len; i++)
@@ -128,9 +290,9 @@ int main(int argc, char **argv)
         fprintf(stderr, "pow: cannot allocate JS runtime\n");
         exit(2);
     }
-    js_std_set_worker_new_context_func(JS_NewCustomContext);
+    js_std_set_worker_new_context_func(POW_JS_NewCustomContext);
     js_std_init_handlers(rt);
-    ctx = JS_NewCustomContext(rt);
+    ctx = POW_JS_NewCustomContext(rt);
     if (!ctx)
     {
         fprintf(stderr, "pow: cannot allocate JS context\n");
@@ -140,7 +302,6 @@ int main(int argc, char **argv)
     /* loader for ES6 modules */
     JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
     js_std_add_helpers(ctx, argc, argv);
-
 
     if (eval_file(ctx, filename, JS_EVAL_TYPE_MODULE))
         goto fail;

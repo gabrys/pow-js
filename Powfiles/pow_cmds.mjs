@@ -103,6 +103,7 @@ export class PowLint {
       "--write",
       "pow/pow*.mjs",
       "Powfiles/pow*.mjs",
+      "Powfiles/reproc.mjs",
       "example/Powfile.mjs",
     ];
     return pow.spawnSync("docker", dockerArgs, {
@@ -198,10 +199,14 @@ export class PowUpdate {
 export class PowWineShell {
   helpShort = "Start a docker container with wine and open a shell";
   run(_ctx, argv) {
-    const cp = pow.spawnSync("docker", ["build", dp, "-t", "pow-wine", "wine/"], {
-      cwd: pow.baseDir,
-      stdio: "inherit",
-    });
+    const cp = pow.spawnSync(
+      "docker",
+      ["build", dp, "-t", "pow-wine", "wine/"],
+      {
+        cwd: pow.baseDir,
+        stdio: "inherit",
+      }
+    );
     if (cp.status !== 0) {
       return cp.status;
     }
