@@ -195,4 +195,30 @@ export class PowUpdate {
   }
 }
 
+export class PowWineShell {
+  helpShort = "Start a docker container with wine and open a shell";
+  run(_ctx, argv) {
+    const cp = pow.spawnSync("docker", ["build", dp, "-t", "pow-wine", "wine/"], {
+      cwd: pow.baseDir,
+      stdio: "inherit",
+    });
+    if (cp.status !== 0) {
+      return cp.status;
+    }
+
+    const dockerArgs = [
+      "run",
+      "--rm",
+      `--volume=${dir}/dist/mingw/:/dist/mingw/`,
+      "-it",
+      "pow-wine",
+    ];
+
+    return pow.spawnSync("docker", dockerArgs, {
+      cwd: pow.baseDir,
+      stdio: "inherit",
+    }).status;
+  }
+}
+
 // vim: tabstop=2 shiftwidth=2 expandtab

@@ -1,8 +1,12 @@
 // This file will be included to qjs.c
 // and the original main function will be renamed to orig_main
 
+#if defined(COSMO)
+
+#include "libc/calls/struct/stat.h"
 #include "libc/isystem/string.h"
 #include "libc/isystem/unistd.h"
+#include "libc/sysv/consts/s.h"
 
 // A few functions borrowed from busybox (and modified a bit)
 // (This is to find the equivalent of `which pow`)
@@ -50,10 +54,15 @@ int find_executable(const char *filename, char *p, char *buffer)
     return 0;
 }
 
+#endif /* COSMO */
+
 // New main
 
 int main(int argc, char **argv)
 {
+
+#if defined(COSMO)
+
     if (!file_is_executable(argv[0]))
     {
 
@@ -69,9 +78,40 @@ int main(int argc, char **argv)
         }
     }
 
+#endif /* COSMO */
+
     JSRuntime *rt;
     JSContext *ctx;
     int repl = 0;
+
+    char *filename = "/zip/pow.mjs";
+
+#if defined(_WIN32)
+
+    // On MinGW build we put the .mjs files next to pow.exe
+    // as we don't have the mechanism to embed them to the binary
+    //
+    // Example location of pow.exe (argv[0]):
+    // C:/Users/gabrys/AppData/Roaming/npm/node_modules/pow-windows/pow.exe
+    //
+    // Corresponding pow.mjs location:
+    // C:/Users/gabrys/AppData/Roaming/npm/node_modules/pow-windows/pow.mjs
+
+    filename = strdup(argv[0]);
+    int len = strlen(filename);
+    int extstart = len - 4;
+
+    if (extstart > 0 && (0 == strcmp(filename + extstart, ".exe"))) {
+        filename[extstart+1] = 'm';
+        filename[extstart+2] = 'j';
+        filename[extstart+3] = 's';
+    }
+
+    for (int i = 0; i < len; i++)
+        if (filename[i] == '\\')
+            filename[i] = '/';
+
+#endif /* _WIN32 */
 
     for (int optind = 1; optind < argc; optind++)
     {
@@ -101,7 +141,7 @@ int main(int argc, char **argv)
     JS_SetModuleLoaderFunc(rt, NULL, js_module_loader, NULL);
     js_std_add_helpers(ctx, argc, argv);
 
-    const char *filename = "/zip/pow.mjs";
+
     if (eval_file(ctx, filename, JS_EVAL_TYPE_MODULE))
         goto fail;
     js_std_loop(ctx);

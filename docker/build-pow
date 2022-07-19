@@ -4,15 +4,17 @@ set -exuo pipefail
 
 tmpdir=$(mktemp -d)
 cd "$tmpdir"
+mkdir mjs
 
-cp /pow/lib.*.mjs .
-cp /pow/pow.*.mjs .
-cp /pow/pow.mjs .
 cp /build/pow_runner.com pow.com
+cp /pow/lib.*.mjs mjs/
+cp /pow/pow.*.mjs mjs/
+cp /pow/pow.mjs mjs/
 
-zip pow.com lib.*.mjs
-zip pow.com pow.*.mjs
-zip pow.com pow.mjs
+(
+  cd mjs/
+  zip ../pow.com *.mjs
+)
 
 mkdir -p /dist/macos
 cp pow.com pow-macos
@@ -27,6 +29,11 @@ mv -b pow-linux /dist/linux/pow
 
 mkdir -p /dist/windows
 mv -b pow.com /dist/windows/pow.exe
+
+mkdir -p /dist/mingw
+cp /build/pow.exe /dist/mingw/pow.exe
+# For MinGW build we need to distribute the JS files as well
+cp mjs/*.mjs /dist/mingw/
 
 if [ -e /dist/gitmodules/pow-dist-darwin/pow ]; then
   cp /dist/macos/pow /dist/gitmodules/pow-dist-darwin/
