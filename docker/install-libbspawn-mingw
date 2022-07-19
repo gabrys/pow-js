@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -euo pipefail
+
+cd /build/windows/libbspawn/
+
+make \
+  AR=x86_64-w64-mingw32-ar \
+  CC=x86_64-w64-mingw32-gcc \
+  CXX=x86_64-w64-mingw32-g++
+
+cp libbspawn.h       /usr/x86_64-w64-mingw32/include/
+cp build/libbspawn.a /usr/x86_64-w64-mingw32/lib/

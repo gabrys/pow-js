@@ -28,12 +28,10 @@ timeout -s9 1 ./pow-linux 1>/dev/null 2>/dev/null || true
 mv -b pow-linux /dist/linux/pow
 
 mkdir -p /dist/windows
-mv -b pow.com /dist/windows/pow.exe
-
-mkdir -p /dist/mingw
-cp /build/pow.exe /dist/mingw/pow.exe
-# For MinGW build we need to distribute the JS files as well
-cp mjs/*.mjs /dist/mingw/
+cp /build/pow.exe /dist/windows/pow.exe
+# For windows build we need to distribute the JS files as well
+rm -f /dist/windows/*.mjs
+cp mjs/*.mjs /dist/windows/
 
 if [ -e /dist/gitmodules/pow-dist-darwin/pow ]; then
   cp /dist/macos/pow /dist/gitmodules/pow-dist-darwin/
@@ -45,4 +43,6 @@ fi
 
 if [ -e /dist/gitmodules/pow-windows/pow.exe ]; then
   cp /dist/windows/pow.exe /dist/gitmodules/pow-windows/
+  rm -f /dist/gitmodules/pow-windows/*.mjs
+  cp mjs/*.mjs /dist/gitmodules/pow-windows/
 fi

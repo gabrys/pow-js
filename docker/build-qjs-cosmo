@@ -2,13 +2,13 @@
 
 set -euo pipefail
 
-type=""
-file=""
-
-if [ "$#" -ge 2 ]; then
-  type="$1"  # win/cosmo
-  file="$2"
+if [ "$#" -ne 1 ]; then
+  echo "Usage:
+    $0 /target/file.com" 1>&2
+  exit 1
 fi
+
+file="$1"
 
 need_demzify() {
   cp -n /build/cosmopolitan/build/bootstrap/apetest.com /build/apetest.com
@@ -50,38 +50,17 @@ make_qjs() {
   make -j6 o//third_party/quickjs/qjs.com
 }
 
-make_qjs_exe() {
-  make -j6 CONFIG_WIN32=y LDEXPORT="-static -s -pthread -lpthread" qjs.exe
-}
+cd /build/cosmopolitan/
 
-if [ "$type" = win ]; then
-
-  cd /build/windows/quickjs/
-  make_qjs_exe
-  cp qjs.exe "$file"
-
-elif [ "$type" = cosmo ]; then
-
-  cd /build/cosmopolitan/
-
-  if need_demzify; then
-    for i in {1..5}; do
-      demzify $i
-      make_qjs || true
-      if ! has_mz_files; then
-        break
-      fi
-    done
-  fi
-
-  make_qjs
-  cp o/third_party/quickjs/qjs.com "$file"
-
-else
-
-  echo "Usage:
-    $0 cosmo /target/file.com
-    $0 win /target/file.exe" 1>&2
-  exit 1
-
+if need_demzify; then
+  for i in {1..5}; do
+    demzify $i
+    make_qjs || true
+    if ! has_mz_files; then
+      break
+    fi
+  done
 fi
+
+make_qjs
+cp o/third_party/quickjs/qjs.com "$file"

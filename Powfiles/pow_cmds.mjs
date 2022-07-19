@@ -195,13 +195,24 @@ export class PowUpdate {
   }
 }
 
+export class PowSpawn {
+  run(_ctx, args) {
+    const [arg0, ...other] = args;
+    pow.spawnSync(arg0, other, { stdio: "inherit" });
+  }
+}
+
 export class PowWineShell {
   helpShort = "Start a docker container with wine and open a shell";
   run(_ctx, argv) {
-    const cp = pow.spawnSync("docker", ["build", dp, "-t", "pow-wine", "wine/"], {
-      cwd: pow.baseDir,
-      stdio: "inherit",
-    });
+    const cp = pow.spawnSync(
+      "docker",
+      ["build", dp, "-t", "pow-wine", "wine/"],
+      {
+        cwd: pow.baseDir,
+        stdio: "inherit",
+      }
+    );
     if (cp.status !== 0) {
       return cp.status;
     }
@@ -209,7 +220,7 @@ export class PowWineShell {
     const dockerArgs = [
       "run",
       "--rm",
-      `--volume=${dir}/dist/mingw/:/dist/mingw/`,
+      `--volume=${dir}/dist/windows/:/dist/windows/`,
       "-it",
       "pow-wine",
     ];

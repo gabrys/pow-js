@@ -1,7 +1,6 @@
 import * as os from "os";
 import * as std from "std";
 import commandLineArgs from "./lib.args.mjs";
-import { windows, windowsCwd } from "./pow.windows.mjs";
 
 function extendedParseArgs(definitions, argv, parseOpts) {
   parseOpts.minArgs = parseOpts.minArgs ?? 0;
@@ -98,10 +97,6 @@ export class PowUtils {
   constructor() {
     if (os.platform === "win32") {
       this.cwd = os.getcwd()[0].replace(/\\/g, "/");
-      this.platform = "win32";
-      this.windows = true;
-    } else if (windows) {
-      this.cwd = windowsCwd;
       this.platform = "win32";
       this.windows = true;
     } else {

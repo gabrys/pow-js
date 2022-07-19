@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [ "$#" -ne 1 ]; then
+  echo "Usage:
+    $0 /target/file.exe" 1>&2
+  exit 1
+fi
+
+file="$1"
+
+
+if [ -e /usr/x86_64-w64-mingw32/lib/libbspawn.a ]; then
+  EXTRA_LIBS="-lbspawn -lboost_filesystem -lboost_atomic -lstdc++ -lws2_32"
+else
+  EXTRA_LIBS=""
+fi
+
+cd /build/windows/quickjs/
+make -j6 \
+  CONFIG_WIN32=y \
+  LDEXPORT="-static -s -pthread" \
+  EXTRA_LIBS="$EXTRA_LIBS" \
+  qjs.exe
+
+cp qjs.exe "$file"

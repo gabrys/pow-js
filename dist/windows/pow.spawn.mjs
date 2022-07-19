@@ -1,22 +1,47 @@
+import * as bspawn from "bspawn";
 import * as os from "os";
 import * as std from "std";
 
-// import { windows, windowsFindExecutable } from "./pow.windows.mjs";
-
-const windows = os.platform == "win32";
-
 class NotImplemented extends Error {}
 
-function validateStdioOpt(opt) {
-  if (typeof opt !== "string") {
-    throw new NotImplemented("Non-string oprions for stdio are not suppoerted");
+function buildCommand(cmd, args, shell) {
+  if (!shell) {
+    return {
+      useDefaultShell: false,
+      fullCmd: [cmd, ...args],
+    };
   }
-  if (opt === "overlapped") {
-    throw new NotImplemented(`spawn: stdio: ${opt} is not supported`);
+
+  // shell is truthy
+
+  if (args && args.length) {
+    throw new NotImplemented("spawn: shell with arguments is not supported");
   }
-  if (!["pipe", "inherit", "ignore"].includes(opt)) {
-    throw TypeError(`The argument 'stdio' is invalid. Received '${opt}'`);
+
+  // args is empty
+
+  if (typeof shell !== "string") {
+    return {
+      useDefaultShell: true,
+      fullCmd: cmd,
+    };
   }
+
+  // shell is a string
+
+  if (/^(?:.*\\)?cmd(?:\.exe)?$/i.test(shellFile)) {
+    throw new NotImplemented(
+      "spawn: selecting a cmd shell is not supported on Windows"
+    );
+  }
+
+  // shell is not cmd.exe. It is probably a Unix shell (bash/sh) or powershell
+  // an thus should support -c param
+
+  return {
+    useDefaultShell: false,
+    fullCmd: [shell, "-c", cmd],
+  };
 }
 
 function normalizeStdioOption(stdio) {
@@ -41,46 +66,6 @@ function normalizeStdioOption(stdio) {
   return stdio;
 }
 
-// Based on https://github.com/uki00a/deno_std/blob/3c8549b6fe09a147f320a35d6fc34f08824e0d13/node/spawn.ts
-function buildCommand(file, args, shell) {
-  let shellFile;
-  if (shell && args && args.length) {
-    throw new NotImplemented("spawn: shell with arguments is not supported");
-  }
-  if (shell && windows) {
-    // Set the shell, switches, and commands.
-    if (typeof shell === "string") {
-      shellFile = shell;
-    } else {
-      shellFile = std.getenv("comspec") || "cmd.exe";
-    }
-    // '/d /s /c' is used only for cmd.exe.
-    if (/^(?:.*\\)?cmd(?:\.exe)?$/i.test(shellFile)) {
-      args = ["/d", "/s", "/c", file];
-    } else {
-      args = ["-c", file];
-    }
-  }
-  if (shell && !windows) {
-    if (typeof shell === "string") {
-      shellFile = shell;
-    } else {
-      shellFile = "/bin/sh";
-    }
-    args = ["-c", file];
-  }
-  // I think this is not needed
-  // if (!shell && windows) {
-  //   if (!file.includes("/") && !file.includes("\\")) {
-  //     file = windowsFindExecutable(file) || file;
-  //   }
-  // }
-  if (shell) {
-    file = shellFile;
-  }
-  return [file, ...args];
-}
-
 export function spawnSync(cmd, args, inOpts) {
   /*
     + cwd <string> | <URL> Current working directory of the child process.
@@ -88,8 +73,8 @@ export function spawnSync(cmd, args, inOpts) {
       argv0 <string> Explicitly set the value of argv[0] sent to the child process. This will be set to command if not specified.
     + stdio <string> | <Array> Child's stdio configuration.
     + env <Object> Environment key-value pairs. Default: process.env.
-    + uid <number> Sets the user identity of the process (see setuid(2)).
-    + gid <number> Sets the group identity of the process (see setgid(2)).
+      uid <number> Sets the user identity of the process (see setuid(2)).
+      gid <number> Sets the group identity of the process (see setgid(2)).
       timeout <number> In milliseconds the maximum amount of time the process is allowed to run. Default: undefined.
       killSignal <string> | <integer> The signal value to be used when the spawned process will be killed. Default: 'SIGTERM'.
       maxBuffer <number> Largest amount of data in bytes allowed on stdout or stderr. If exceeded, the child process is terminated and any output is truncated. See caveat at maxBuffer and Unicode. Default: 1024 * 1024.
@@ -98,30 +83,35 @@ export function spawnSync(cmd, args, inOpts) {
       windowsVerbatimArguments <boolean> No quoting or escaping of arguments is done on Windows. Ignored on Unix. This is set to true automatically when shell is specified and is CMD. Default: false.
       windowsHide <boolean> Hide the subprocess console window that would normally be created on Windows systems. Default: false.
   */
+  if (!Array.isArray(args) && inOpts === undefined) {
+    inOpts = args;
+    args = [];
+  }
   inOpts = inOpts || {};
 
-  // TODO: spawn: support skipping args
-  // TODO: spawn: better support stdio: ignore
-  // TODO: spawn: support timeout
-
-  const supportedOpts = [
-    "cwd",
-    "input",
-    "stdio",
-    "env",
-    "uid",
-    "gid",
-    "encoding",
-    "shell",
-  ];
+  const supportedOpts = ["cwd", "encoding", "env", "input", "shell", "stdio"];
   const unsupportedOpts = [
     "argv0",
-    "timeout",
+    "gid",
     "killSignal",
     "maxBuffer",
-    "windowsVerbatimArguments",
+    "timeout",
+    "uid",
     "windowsHide",
+    "windowsVerbatimArguments",
   ];
+
+  if (typeof cmd !== "string") {
+    throw new Exception(
+      "First argument to pow.spawnSync needs to be a string (command to run)"
+    );
+  }
+
+  if (!Array.isArray(args)) {
+    throw new Exception(
+      "Second argument to pow.spawnSync needs to be an array (list of arguments)"
+    );
+  }
 
   for (const optName in inOpts) {
     if (unsupportedOpts.includes(optName)) {
@@ -133,27 +123,6 @@ export function spawnSync(cmd, args, inOpts) {
   }
 
   const stdioConfig = normalizeStdioOption(inOpts.stdio);
-
-  const opts = {
-    block: false,
-  };
-
-  let pipeIn;
-  let pipeOut;
-  let pipeErr;
-  let stdin;
-  let stdout;
-  let stderr;
-
-  if (inOpts.cwd) {
-    opts.cwd = inOpts.cwd;
-  }
-
-  if (inOpts.input) {
-    pipeIn = os.pipe();
-    opts.stdin = pipeIn[0];
-  }
-
   const encoding = inOpts.encoding || "buffer";
 
   if (encoding !== "utf-8") {
@@ -165,47 +134,97 @@ export function spawnSync(cmd, args, inOpts) {
   if (stdioConfig[1] === "pipe" && encoding !== "utf-8") {
     throw new NotImplemented("spawn: only encoding: utf-8 is supported");
   }
-  if (["pipe", "ignore"].includes(stdioConfig[1])) {
-    pipeOut = os.pipe();
-    opts.stdout = pipeOut[1];
-  }
 
   if (stdioConfig[2] === "pipe" && encoding !== "utf-8") {
     throw new NotImplemented("spawn: only encoding: utf-8 is supported");
   }
-  if (["pipe", "ignore"].includes(stdioConfig[1])) {
+
+  const { fullCmd, useDefaultShell } = buildCommand(cmd, args, inOpts.shell);
+
+  const cwd = inOpts.cwd || os.getcwd()[0];
+  const env = inOpts.env || std.getenviron();
+
+  let [stdin, stdout, stderr] = stdioConfig;
+
+  let input = inOpts.input;
+  if (typeof input !== "string") {
+    if (input) {
+      throw new NotImplemented("spawn: only string input is supported");
+    }
+    input = undefined;
+  }
+  if (stdin !== "inherit") {
+    stdin = "close";
+  }
+
+  const impl = os.platform === "win32" ? runImplWindows : runImplCosmo;
+
+  return impl(fullCmd, cwd, env, input, stdin, stdout, stderr, useDefaultShell);
+}
+
+function runImplCosmo(
+  cmd, // string if useDefaultShell=true, otherwise Array
+  cwd, // always string
+  env, // object of key-value strings
+  input, // undefined or string
+  stdinConfig, // "close" or "inherit". Always "close" if input is passed
+  stdoutConfig, // "ignore", "inherit" or "capture"
+  stderrConfig, // "ignore", "inherit" or "capture"
+  useDefaultShell // bool, cmd is a string to run via defaultShell
+) {
+  const opts = {
+    block: false,
+    cwd: cwd,
+    env: env,
+  };
+
+  let pipeIn;
+  let pipeOut;
+  let pipeErr;
+  let stdin;
+  let stdout;
+  let stderr;
+
+  if (["capture", "ignore"].includes(stdoutConfig)) {
+    pipeOut = os.pipe();
+    opts.stdout = pipeOut[1];
+  }
+  if (["capture", "ignore"].includes(stderrConfig)) {
     pipeErr = os.pipe();
     opts.stderr = pipeErr[1];
   }
 
-  opts.env = inOpts.env;
-  opts.uid = inOpts.uid;
-  opts.gid = inOpts.gid;
+  if (stdinConfig === "close") {
+    pipeIn = os.pipe();
+    opts.stdin = pipeIn[0];
+  }
 
-  const fullCmd = buildCommand(cmd, args, inOpts.shell);
+  if (useDefaultShell) {
+    cmd = ["sh", "-c", cmd];
+  }
 
   // EXEC HERE!
-  const pid = os.exec(fullCmd, opts);
+  const pid = os.exec(cmd, opts);
   const ret = {};
 
-  if (inOpts.input) {
+  if (input !== undefined) {
     stdin = std.fdopen(pipeIn[1], "w");
-    stdin.puts(inOpts.input);
+    stdin.puts(input);
     stdin.close();
   }
 
-  if (["pipe", "ignore"].includes(stdioConfig[1])) {
+  if (["capture", "ignore"].includes(stdoutConfig)) {
     os.close(pipeOut[1]);
   }
-  if (stdioConfig[1] === "pipe") {
+  if (stdoutConfig === "capture") {
     stdout = std.fdopen(pipeOut[0], "r");
     ret.stdout = stdout.readAsString();
   }
 
-  if (["pipe", "ignore"].includes(stdioConfig[2])) {
+  if (["capture", "ignore"].includes(stderrConfig)) {
     os.close(pipeErr[1]);
   }
-  if (stdioConfig[2] === "pipe") {
+  if (stderrConfig === "capture") {
     stderr = std.fdopen(pipeErr[0], "r");
     ret.stderr = stderr.readAsString();
   }
@@ -216,9 +235,132 @@ export function spawnSync(cmd, args, inOpts) {
     ret.error = {};
   }
 
-  if (inOpts.input) {
+  if (stdinConfig === "close") {
     os.close(opts.stdin);
   }
 
   return ret;
+}
+
+function runImplWindows(
+  cmd, // string if useDefaultShell=true, otherwise Array
+  cwd, // always string
+  env, // object of key-value strings
+  input, // undefined or string
+  stdin, // "ignore" or "inherit". Always "ignore" if input is passed
+  stdout, // "ignore", "inherit" or "capture"
+  stderr, // "ignore", "inherit" or "capture"
+  useDefaultShell // bool, cmd is a string to run via cmd.exe
+) {
+  let debugInput = input === undefined ? "(not set)" : input;
+  if (debugInput.length > 15) {
+    debugInput = debugInput.substring(0, 12) + "...";
+  }
+  pow.DEBUG(
+    "Running command via bspawn",
+    `cmd:       ${JSON.stringify(cmd)}`,
+    `cwd:       ${cwd}`,
+    `env:       ${env}`,
+    `input:     ${debugInput}`,
+    `stdin:     ${stdin}`,
+    `stdout:    ${stdout}`,
+    `stderr:    ${stderr}`,
+    `useShell:  ${useDefaultShell}`
+  );
+
+  const cmdExe = std.getenv("comspec") || "cmd.exe";
+
+  const randomCmd = "echo %RANDOM%%RANDOM% %RANDOM%%RANDOM%";
+  const randomCp = reproc.run(
+    [cmdExe, "/d", "/s", "/c", randomCmd],
+    cwd,
+    env,
+    "ignore",
+    "capture",
+    "inherit"
+  );
+  const [random1, random2] = randomCp.stdout
+    .trim()
+    .split(" ")
+    .map((n) => Math.abs(n));
+
+  const cmdPath = `${std.getenv("TMP")}\\pow-run-${random1}.cmd`;
+  const inputPath = `${std.getenv("TMP")}\\pow-run-${random1}.input`;
+
+  if (input !== undefined) {
+    const inputFile = std.open(inputPath, "w");
+    inputFile.puts(input);
+    inputFile.close();
+  }
+
+  let reprocCmd;
+
+  if (useDefaultShell) {
+    const cmdFile = std.open(cmdPath, "w");
+    cmdFile.puts("@echo off\n" + cmd);
+    if (input !== undefined) {
+      cmdFile.puts(` < ${inputPath}`);
+    }
+    cmdFile.close();
+    reprocCmd = cmdPath;
+  } else {
+    if (!cmd[0].includes("/") && !cmd[0].includes("\\")) {
+      cmd[0] = windowsFindExecutable(cmd[0], cwd, env) || cmd[0];
+    }
+    for (let i = 0; i < cmd.length; i += 1) {
+      cmd[i] = `'${cmd[i].replace(/\\/g, '\\\\').replace(/'/g, "''")}'`;
+    }
+    let cmdString = `& ${cmd.join(" ")}`;
+    pow.DEBUG("Launching PowerShell script:", cmdString);
+    if (input !== undefined) {
+      cmdString += ` < ${inputPath}`;
+    }
+    reprocCmd = ["powershell.exe", "-Command", cmdString];
+  }
+
+  const out = bspawn.spawn_child(
+    cmd, //
+    cwd, //
+    env, //
+    stdin_config, //
+    stdout_config, //
+    stderr_config, //
+    stdin_data, //
+    timeout //
+  );
+
+  os.remove(cmdPath);
+  os.remove(inputPath);
+
+  return out;
+}
+
+function validateStdioOpt(opt) {
+  if (typeof opt !== "string") {
+    throw new NotImplemented("Non-string oprions for stdio are not supported");
+  }
+  if (opt === "overlapped") {
+    throw new NotImplemented(`spawn: stdio: ${opt} is not supported`);
+  }
+  if (!["pipe", "inherit", "ignore"].includes(opt)) {
+    throw TypeError(`The argument 'stdio' is invalid. Received '${opt}'`);
+  }
+}
+
+function windowsFindExecutable(name, cwd, env) {
+  const cp = reproc.run(
+    ["where", name],
+    cwd,
+    env,
+    "close",
+    "capture",
+    "inherit"
+  );
+  const candidates = cp.stdout.trim().split("\r\n");
+  for (const candidate of candidates) {
+    const ext = candidate.split(".").pop().toLowerCase();
+    if (["bat", "cmd", "exe"].includes(ext)) {
+      return candidate;
+    }
+  }
 }

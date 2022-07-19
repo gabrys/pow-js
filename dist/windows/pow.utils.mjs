@@ -95,10 +95,10 @@ export class PowLogger {
 
 export class PowUtils {
   constructor() {
-    this.windows = os.platform == "win32";
-    if (this.windows) {
+    if (os.platform === "win32") {
       this.cwd = os.getcwd()[0].replace(/\\/g, "/");
       this.platform = "win32";
+      this.windows = true;
     } else {
       this.cwd = os.getcwd()[0];
       this.platform = std.popen("uname", "r").getline().toLowerCase();
