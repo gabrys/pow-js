@@ -12,7 +12,7 @@ file="$1"
 
 
 if [ -e /usr/x86_64-w64-mingw32/lib/libbspawn.a ]; then
-  EXTRA_LIBS="-lbspawn -lboost_filesystem -lboost_atomic -lstdc++ -lws2_32"
+  EXTRA_LIBS="-lbspawn -lboost_filesystem -lboost_atomic -lstdc++ -lbcrypt -lws2_32"
 else
   EXTRA_LIBS=""
 fi

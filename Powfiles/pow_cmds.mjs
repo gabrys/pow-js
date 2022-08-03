@@ -182,7 +182,7 @@ export class PowUpdate {
     const dockerArgs = [
       "run",
       "--rm",
-      `--user=${uid}:${gid}`,
+      // `--user=${uid}:${gid}`,
       `--volume=${dir}/pow/:/pow/`,
       `--volume=${dir}/dist/:/dist/`,
       "pow",

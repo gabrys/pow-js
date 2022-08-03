@@ -126,18 +126,18 @@ fail:
     goto done;
 }
 
-/* bspawn.spawn_child(cmd, cwd, env, stdin_config, stdout_config, stderr_config, stdin_data, timeout) -> {status, stdout, stderr} */
+/* bspawn.spawn_child(cmd, cwd, env, timeout, stdin_config, stdout_config, stderr_config, stdin_data) -> {status, stdout, stderr} */
 static JSValue js_bspawn_spawn_child(JSContext *ctx, JSValueConst this_val,
                                      int argc, JSValueConst *argv)
 {
     JSValueConst arg_cmd = argv[0];
     JSValueConst arg_cwd = argv[1];
     JSValueConst arg_env = argv[2];
-    JSValueConst arg_stdin_config = argv[3];  // 1=IGNORE, 2=INHERIT, 3=PIPE
-    JSValueConst arg_stdout_config = argv[4]; // 1=IGNORE, 2=INHE3IT, 3=PIPE
-    JSValueConst arg_stderr_config = argv[5]; // 1=IGNORE, 2=INHERIT, 3=PIPE, 4=STDOUT
-    JSValueConst arg_stdin_data = argv[6];
-    JSValueConst arg_timeout = argv[7];
+    JSValueConst arg_timeout = argv[3];
+    JSValueConst arg_stdin_config = argv[4];  // 1=IGNORE, 2=INHERIT, 3=PIPE
+    JSValueConst arg_stdout_config = argv[5]; // 1=IGNORE, 2=INHE3IT, 3=PIPE
+    JSValueConst arg_stderr_config = argv[6]; // 1=IGNORE, 2=INHERIT, 3=PIPE, 4=STDOUT
+    JSValueConst arg_stdin_data = argv[7];
 
     JSValue val, ret_val;
     uint32_t exec_argc, i;
@@ -154,9 +154,7 @@ static JSValue js_bspawn_spawn_child(JSContext *ctx, JSValueConst this_val,
         return JS_EXCEPTION;
     /* arbitrary limit to avoid overflow */
     if (exec_argc < 1 || exec_argc > 65535)
-    {
         return JS_ThrowTypeError(ctx, "invalid number of arguments");
-    }
     exec_argv = js_mallocz(ctx, sizeof(exec_argv[0]) * (exec_argc + 1));
     if (!exec_argv)
         return JS_EXCEPTION;
@@ -177,7 +175,7 @@ static JSValue js_bspawn_spawn_child(JSContext *ctx, JSValueConst this_val,
     const char *cwd = JS_ToCString(ctx, arg_cwd);
     if (!cwd)
         goto exception;
-    printf("cwd: %s\n", cwd);
+    // printf("qjs_pow.c cwd: %s\n", cwd);
 
     // env:
     const char **envp = (const char **)build_envp(ctx, arg_env);
@@ -188,35 +186,35 @@ static JSValue js_bspawn_spawn_child(JSContext *ctx, JSValueConst this_val,
     const char *stdin_data = JS_ToCString(ctx, arg_stdin_data);
     if (!stdin_data)
         goto exception;
-    printf("stdin_data: %s\n", stdin_data);
+    // printf("qjs_pow.c stdin_data: %s\n", stdin_data);
 
     // stdin
     uint32_t stdin_config = 0;
     ret = JS_ToUint32(ctx, &stdin_config, arg_stdin_config);
-    if (!ret)
+    if (ret)
         goto exception;
-    printf("stdin: %d\n", stdin_config);
+    // printf("qjs_pow.c stdin: %d\n", stdin_config);
 
     // stdout
     uint32_t stdout_config = 0;
     ret = JS_ToUint32(ctx, &stdout_config, arg_stdout_config);
-    if (!ret)
+    if (ret)
         goto exception;
-    printf("stdout: %d\n", stdout_config);
+    // printf("qjs_pow.c stdout: %d\n", stdout_config);
 
     // stderr
     uint32_t stderr_config = 0;
     ret = JS_ToUint32(ctx, &stderr_config, arg_stderr_config);
-    if (!ret)
+    if (ret)
         goto exception;
-    printf("stderr: %d\n", stderr_config);
+    // printf("qjs_pow.c stderr: %d\n", stderr_config);
 
     // timeout
     uint32_t timeout = 0;
     ret = JS_ToUint32(ctx, &timeout, arg_timeout);
-    if (!ret)
+    if (ret)
         goto exception;
-    printf("timeout: %d\n", timeout);
+    // printf("qjs_pow.c timeout: %d\n", timeout);
 
     const char *stdout_data = NULL;
     const char *stderr_data = NULL;
@@ -255,16 +253,28 @@ static JSValue js_bspawn_spawn_child(JSContext *ctx, JSValueConst this_val,
     // if (rr != REPROC_EPIPE)
     //     goto exception;
 
-    printf("ok:        %d\n", ok);
-    printf("exit_code: %d\n", exit_code);
-    printf("stdout:    %s\n", stdout_data);
-    printf("stderr:    %s\n", stderr_data);
+    // printf("qjs_pow.c ok:        %d\n", ok);
+    // printf("qjs_pow.c exit_code: %d\n", exit_code);
+    // printf("qjs_pow.c stdout:    %s\n", stdout_data);
+    // printf("qjs_pow.c stderr:    %s\n", stderr_data);
 
-    // Wait for the process to exit. This should always be done since some systems
-    // (POSIX) don't clean up system resources allocated to a child process until
-    // the parent process explicitly waits for it after it has exited.
+    JSValue obj = JS_NewObject(ctx);
+    if (JS_IsException(obj))
+        return JS_EXCEPTION;
 
-    ret_val = JS_NewInt32(ctx, -666);
+    JSAtom atom_status = JS_NewAtomLen(ctx, "status", strlen("status"));
+    JSAtom atom_stdout = JS_NewAtomLen(ctx, "stdout", strlen("stdout"));
+    JSAtom atom_stderr = JS_NewAtomLen(ctx, "stderr", strlen("stderr"));
+
+    JS_DefinePropertyValue(ctx, obj, atom_status, JS_NewInt32(ctx, exit_code), JS_PROP_C_W_E);
+    if (stdout_data != NULL)
+        JS_DefinePropertyValue(ctx, obj, atom_stdout, JS_NewString(ctx, stdout_data), JS_PROP_C_W_E);
+    if (stderr_data != NULL)
+        JS_DefinePropertyValue(ctx, obj, atom_stderr, JS_NewString(ctx, stderr_data), JS_PROP_C_W_E);
+
+    return obj;
+
+    // ret_val = JS_NewInt32(ctx, -666);
 
 done:
     // JS_FreeCString(ctx, file);

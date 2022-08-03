@@ -46,3 +46,17 @@ if [ -e /dist/gitmodules/pow-windows/pow.exe ]; then
   rm -f /dist/gitmodules/pow-windows/*.mjs
   cp mjs/*.mjs /dist/gitmodules/pow-windows/
 fi
+
+cd /build/windows/libbspawn/
+
+# make \
+#   AR=x86_64-w64-mingw32-ar \
+#   CC=x86_64-w64-mingw32-gcc \
+#   CXX=x86_64-w64-mingw32-g++ cspawn.exe
+
+x86_64-w64-mingw32-gcc -flto=auto -Os -static -pthread -o cspawn.exe cspawn.c build/libbspawn.a \
+        -lboost_filesystem -lboost_atomic -lbcrypt -lstdc++ -lws2_32
+
+
+cp cspawn.exe /dist/windows/
+

@@ -41,6 +41,9 @@ RUN install-libbspawn-mingw
 
 # Apply our changes:
 
+RUN build-qjs-cosmo /build/pow_runner.com
+RUN build-qjs-mingw /build/pow.exe
+
 ADD patch-qjs /bin/
 ADD qjs_pow.c .
 RUN patch-qjs qjs_pow.c

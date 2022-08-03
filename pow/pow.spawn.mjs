@@ -159,6 +159,7 @@ export function spawnSync(cmd, args, inOpts) {
 
   const impl = os.platform === "win32" ? runImplWindows : runImplCosmo;
 
+  // print(fullCmd, cwd, env, input, stdin, stdout, stderr, useDefaultShell);
   return impl(fullCmd, cwd, env, input, stdin, stdout, stderr, useDefaultShell);
 }
 
@@ -167,9 +168,9 @@ function runImplCosmo(
   cwd, // always string
   env, // object of key-value strings
   input, // undefined or string
-  stdinConfig, // "close" or "inherit". Always "close" if input is passed
-  stdoutConfig, // "ignore", "inherit" or "capture"
-  stderrConfig, // "ignore", "inherit" or "capture"
+  stdinConfig, // "ignore", "inherit" or "pipe". "pipe" if and only if input is passed
+  stdoutConfig, // "ignore", "inherit" or "pipe"
+  stderrConfig, // "ignore", "inherit" or "pipe"
   useDefaultShell // bool, cmd is a string to run via defaultShell
 ) {
   const opts = {
@@ -247,11 +248,18 @@ function runImplWindows(
   cwd, // always string
   env, // object of key-value strings
   input, // undefined or string
-  stdin, // "ignore" or "inherit". Always "ignore" if input is passed
+  stdin, // "close" or "inherit". Always "close" if input is passed
   stdout, // "ignore", "inherit" or "capture"
   stderr, // "ignore", "inherit" or "capture"
-  useDefaultShell // bool, cmd is a string to run via cmd.exe
+  useDefaultShell // bool, cmd is a string to run via defaultShell
 ) {
+  const stdioConfigInt = {
+    close: 1,
+    ignore: 1,
+    inherit: 2,
+    pipe: 3,
+  };
+
   let debugInput = input === undefined ? "(not set)" : input;
   if (debugInput.length > 15) {
     debugInput = debugInput.substring(0, 12) + "...";
@@ -271,13 +279,16 @@ function runImplWindows(
   const cmdExe = std.getenv("comspec") || "cmd.exe";
 
   const randomCmd = "echo %RANDOM%%RANDOM% %RANDOM%%RANDOM%";
-  const randomCp = reproc.run(
+  const randomCp = bspawn.spawn_child(
     [cmdExe, "/d", "/s", "/c", randomCmd],
     cwd,
     env,
-    "ignore",
-    "capture",
-    "inherit"
+    0,
+    1,  // stdin=ignore
+    3,  // stdout=pipe
+    2,  // stderr=inherit
+    "", // input=none
+    0,  // timeout=none
   );
   const [random1, random2] = randomCp.stdout
     .trim()
@@ -285,52 +296,33 @@ function runImplWindows(
     .map((n) => Math.abs(n));
 
   const cmdPath = `${std.getenv("TMP")}\\pow-run-${random1}.cmd`;
-  const inputPath = `${std.getenv("TMP")}\\pow-run-${random1}.input`;
-
-  if (input !== undefined) {
-    const inputFile = std.open(inputPath, "w");
-    inputFile.puts(input);
-    inputFile.close();
-  }
-
-  let reprocCmd;
 
   if (useDefaultShell) {
     const cmdFile = std.open(cmdPath, "w");
     cmdFile.puts("@echo off\n" + cmd);
-    if (input !== undefined) {
-      cmdFile.puts(` < ${inputPath}`);
-    }
     cmdFile.close();
-    reprocCmd = cmdPath;
-  } else {
-    if (!cmd[0].includes("/") && !cmd[0].includes("\\")) {
-      cmd[0] = windowsFindExecutable(cmd[0], cwd, env) || cmd[0];
-    }
-    for (let i = 0; i < cmd.length; i += 1) {
-      cmd[i] = `'${cmd[i].replace(/\\/g, '\\\\').replace(/'/g, "''")}'`;
-    }
-    let cmdString = `& ${cmd.join(" ")}`;
-    pow.DEBUG("Launching PowerShell script:", cmdString);
-    if (input !== undefined) {
-      cmdString += ` < ${inputPath}`;
-    }
-    reprocCmd = ["powershell.exe", "-Command", cmdString];
+    cmd = [cmdPath];
   }
 
+  // print("pow spawn cmd: ", cmd);
+
+  let stdinConfig = stdioConfigInt[stdin];
+  if (typeof(input) === "string") {
+    stdinConfig = 3; /* pipe */
+  } 
+
   const out = bspawn.spawn_child(
-    cmd, //
-    cwd, //
-    env, //
-    stdin_config, //
-    stdout_config, //
-    stderr_config, //
-    stdin_data, //
-    timeout //
+    cmd,
+    cwd,
+    env,
+    0,  // timeout
+    stdinConfig,
+    stdioConfigInt[stdout],
+    stdioConfigInt[stderr],
+    input,
   );
 
   os.remove(cmdPath);
-  os.remove(inputPath);
 
   return out;
 }
