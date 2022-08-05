@@ -2,38 +2,36 @@
 
 set -exuo pipefail
 
-tmpdir=$(mktemp -d)
+tmpdir="$(mktemp -d)"
 cd "$tmpdir"
 mkdir mjs
 
-cp /build/pow_runner.com pow.com
+cp /build/pow-runner.sh pow-runner.sh
+cp /build/pow-runner.exe pow-runner.exe
 cp /pow/lib.*.mjs mjs/
 cp /pow/pow.*.mjs mjs/
 cp /pow/pow.mjs mjs/
 
 (
   cd mjs/
-  zip ../pow.com *.mjs
+  zip ../pow-runner.sh *.mjs
+  zip ../pow-runner.exe *.mjs
 )
 
-mkdir -p /dist/macos
-cp pow.com pow-macos
-echo "o=pow-macos ; " $(head pow.com | grep -a ^dd) | bash
-mv -b pow-macos /dist/macos/pow
+cp pow-runner.sh pow-linux
+/bin/assimilate -e pow-linux
+
+cp pow-runner.sh pow-macos
+/bin/assimilate -m pow-macos
 
 mkdir -p /dist/linux
-cp pow.com pow-linux
-sed s/MZqFpD/Ue6OCi/g -i pow-linux
-timeout -s9 1 ./pow-linux 1>/dev/null 2>/dev/null || true
 mv -b pow-linux /dist/linux/pow
 
-mkdir -p /dist/windows
-mv -b pow.com /dist/windows/pow.exe
+mkdir -p /dist/macos
+mv -b pow-macos /dist/macos/pow
 
-mkdir -p /dist/mingw
-cp /build/pow.exe /dist/mingw/pow.exe
-# For MinGW build we need to distribute the JS files as well
-cp mjs/*.mjs /dist/mingw/
+mkdir -p /dist/windows
+mv -b pow-runner.exe /dist/windows/pow.exe
 
 if [ -e /dist/gitmodules/pow-dist-darwin/pow ]; then
   cp /dist/macos/pow /dist/gitmodules/pow-dist-darwin/
