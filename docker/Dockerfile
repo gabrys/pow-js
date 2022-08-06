@@ -12,7 +12,7 @@ ADD patch-qjs /bin/
 ADD qjs_pow.c .
 RUN patch-qjs qjs_pow.c
 
-ADD demzify /bin/
+ADD demzify_funcs.sh /bin/
 ADD build-qjs /bin/
 RUN build-qjs linux-macos /build/pow-runner.sh
 RUN build-qjs windows /build/pow-runner.exe

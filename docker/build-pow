@@ -4,43 +4,34 @@ set -exuo pipefail
 
 tmpdir="$(mktemp -d)"
 cd "$tmpdir"
-mkdir mjs
 
-cp /build/pow-runner.sh pow-runner.sh
-cp /build/pow-runner.exe pow-runner.exe
-cp /pow/lib.*.mjs mjs/
-cp /pow/pow.*.mjs mjs/
-cp /pow/pow.mjs mjs/
+cp /build/pow-runner.sh pow-linux
+cp /build/pow-runner.sh pow-macos
+cp /build/pow-runner.exe pow-windows.exe
 
-(
-  cd mjs/
-  zip ../pow-runner.sh *.mjs
-  zip ../pow-runner.exe *.mjs
-)
+# Bundle all JavaScript files
+# zip -j stores all files in the root directory of the archive
+zip -j pow-linux       /pow/lib.*.mjs /pow/pow.*.mjs /pow/pow.mjs /pow/linux/pow.platform.mjs
+zip -j pow-macos       /pow/lib.*.mjs /pow/pow.*.mjs /pow/pow.mjs /pow/macos/pow.platform.mjs
+zip -j pow-windows.exe /pow/lib.*.mjs /pow/pow.*.mjs /pow/pow.mjs /pow/windows/pow.platform.mjs
 
-cp pow-runner.sh pow-linux
+# Assimilate binaries
 /bin/assimilate -e pow-linux
-
-cp pow-runner.sh pow-macos
 /bin/assimilate -m pow-macos
 
-mkdir -p /dist/linux
+# Move ready binaries to dist
+mkdir -p /dist/linux /dist/macos /dist/windows
 mv -b pow-linux /dist/linux/pow
-
-mkdir -p /dist/macos
 mv -b pow-macos /dist/macos/pow
+mv -b pow-windows.exe /dist/windows/pow.exe
 
-mkdir -p /dist/windows
-mv -b pow-runner.exe /dist/windows/pow.exe
-
-if [ -e /dist/gitmodules/pow-dist-darwin/pow ]; then
-  cp /dist/macos/pow /dist/gitmodules/pow-dist-darwin/
-fi
-
+# Update submodules
 if [ -e /dist/gitmodules/pow-dist-linux/pow ]; then
   cp /dist/linux/pow /dist/gitmodules/pow-dist-linux/
 fi
-
+if [ -e /dist/gitmodules/pow-dist-darwin/pow ]; then
+  cp /dist/macos/pow /dist/gitmodules/pow-dist-darwin/
+fi
 if [ -e /dist/gitmodules/pow-windows/pow.exe ]; then
   cp /dist/windows/pow.exe /dist/gitmodules/pow-windows/
 fi

@@ -1,7 +1,7 @@
 import * as os from "os";
 import * as std from "std";
 import commandLineArgs from "./lib.args.mjs";
-import { windows, windowsCwd } from "./pow.windows.mjs";
+import { platform } from "./pow.platform.mjs";
 
 function extendedParseArgs(definitions, argv, parseOpts) {
   parseOpts.minArgs = parseOpts.minArgs ?? 0;
@@ -96,17 +96,15 @@ export class PowLogger {
 
 export class PowUtils {
   constructor() {
-    if (os.platform === "win32") {
-      this.cwd = os.getcwd()[0].replace(/\\/g, "/");
-      this.platform = "win32";
-      this.windows = true;
-    } else if (windows) {
-      this.cwd = windowsCwd;
-      this.platform = "win32";
-      this.windows = true;
+    this.platform = platform;
+    this.windows = platform == "win32";
+    if (this.windows) {
+      // Example path reported by os.getcwd():
+      // "/C/Users/gabrys/pow-js"
+      // pow.cwd is then "C:/Users/gabrys/pow-js"
+      this.cwd = os.getcwd()[0].replace(/^\/([A-Z])\//, "$1:/");
     } else {
       this.cwd = os.getcwd()[0];
-      this.platform = std.popen("uname", "r").getline().toLowerCase();
       this.gid = ~~std.popen("id -g", "r").getline();
       this.uid = ~~std.popen("id -u", "r").getline();
     }

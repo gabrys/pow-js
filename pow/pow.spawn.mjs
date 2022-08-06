@@ -4,43 +4,28 @@ import * as std from "std";
 class NotImplemented extends Error {}
 
 function buildCommand(cmd, args, shell) {
+  const cmdExe = std.getenv("comspec") || "cmd.exe";
+  const defaultShell = pow.windows ? cmdExe : "/bin/sh";
+
   if (!shell) {
-    return {
-      useDefaultShell: false,
-      fullCmd: [cmd, ...args],
-    };
+    return [cmd, ...args];
   }
 
-  // shell is truthy
+  if (typeof shell === "string") {
+    throw new NotImplemented(
+      `spawn: selecting a shell is not supported (shell: true will use ${defaultShell})`
+    );
+  }
 
   if (args && args.length) {
     throw new NotImplemented("spawn: shell with arguments is not supported");
   }
 
-  // args is empty
-
-  if (typeof shell !== "string") {
-    return {
-      useDefaultShell: true,
-      fullCmd: cmd,
-    };
+  if (pow.windows) {
+    return [defaultShell, "/d", "/s", "/c", cmd];
   }
 
-  // shell is a string
-
-  if (/^(?:.*\\)?cmd(?:\.exe)?$/i.test(shellFile)) {
-    throw new NotImplemented(
-      "spawn: selecting a cmd shell is not supported on Windows"
-    );
-  }
-
-  // shell is not cmd.exe. It is probably a Unix shell (bash/sh) or powershell
-  // an thus should support -c param
-
-  return {
-    useDefaultShell: false,
-    fullCmd: [shell, "-c", cmd],
-  };
+  return [defaultShell, "-c", cmd];
 }
 
 function normalizeStdioOption(stdio) {
@@ -138,9 +123,9 @@ export function spawnSync(cmd, args, inOpts) {
     throw new NotImplemented("spawn: only encoding: utf-8 is supported");
   }
 
-  const { fullCmd, useDefaultShell } = buildCommand(cmd, args, inOpts.shell);
+  const fullCmd = buildCommand(cmd, args, inOpts.shell);
 
-  const cwd = inOpts.cwd || os.getcwd()[0];
+  const cwd = inOpts.cwd || pow.cwd;
   const env = inOpts.env || std.getenviron();
 
   let [stdin, stdout, stderr] = stdioConfig;
@@ -156,20 +141,23 @@ export function spawnSync(cmd, args, inOpts) {
     stdin = "close";
   }
 
-  // print(fullCmd, cwd, env, input, stdin, stdout, stderr, useDefaultShell);
-  return runImplCosmo(fullCmd, cwd, env, input, stdin, stdout, stderr, useDefaultShell);
+  pow.DEBUG("Running command", fullCmd, cwd, env, input, stdin, stdout, stderr);
+  return runImplCosmo(fullCmd, cwd, env, input, stdin, stdout, stderr);
 }
 
 function runImplCosmo(
-  cmd, // string if useDefaultShell=true, otherwise Array
+  cmd, // always Array
   cwd, // always string
   env, // object of key-value strings
   input, // undefined or string
   stdinConfig, // "ignore", "inherit" or "pipe". "pipe" if and only if input is passed
   stdoutConfig, // "ignore", "inherit" or "pipe"
-  stderrConfig, // "ignore", "inherit" or "pipe"
-  useDefaultShell // bool, cmd is a string to run via defaultShell
+  stderrConfig // "ignore", "inherit" or "pipe"
 ) {
+  if (pow.windows) {
+    env = supplementWindowsEnvironment(env);
+  }
+
   const opts = {
     block: false,
     cwd: cwd,
@@ -195,11 +183,6 @@ function runImplCosmo(
   if (stdinConfig === "close") {
     pipeIn = os.pipe();
     opts.stdin = pipeIn[0];
-  }
-
-  if (useDefaultShell) {
-    // Better support Win
-    cmd = ["sh", "-c", cmd];
   }
 
   // EXEC HERE!
@@ -253,20 +236,25 @@ function validateStdioOpt(opt) {
   }
 }
 
-function windowsFindExecutable(name, cwd, env) {
-  const cp = reproc.run(
-    ["where", name],
-    cwd,
-    env,
-    "close",
-    "capture",
-    "inherit"
-  );
-  const candidates = cp.stdout.trim().split("\r\n");
-  for (const candidate of candidates) {
-    const ext = candidate.split(".").pop().toLowerCase();
-    if (["bat", "cmd", "exe"].includes(ext)) {
-      return candidate;
+function supplementWindowsEnvironment(env) {
+  const newEnv = { ...env };
+
+  for (const envName of [
+    "HOMEDRIVE",
+    "HOMEPATH",
+    "LOGONSERVER",
+    "PATH",
+    "SYSTEMDRIVE",
+    "SYSTEMROOT",
+    "TEMP",
+    "USERDOMAIN",
+    "USERNAME",
+    "USERPROFILE",
+    "WINDIR",
+  ]) {
+    if (newEnv[envName] === undefined) {
+      newEnv[envName] = std.getenv(envName);
     }
   }
+  return newEnv;
 }
