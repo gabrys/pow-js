@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -exuo pipefail
+
+cd /build/cosmopolitan/
+
+make -j6 MODE=tiny CPPFLAGS=-DSUPPORT_VECTOR=1 o/tiny/tool/build/assimilate.com
+cp o/tiny/tool/build/assimilate.com /bin/assimilate
+rm -rf o/tiny/

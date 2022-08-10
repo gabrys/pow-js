@@ -2,47 +2,36 @@
 
 set -exuo pipefail
 
-tmpdir=$(mktemp -d)
+tmpdir="$(mktemp -d)"
 cd "$tmpdir"
-mkdir mjs
 
-cp /build/pow_runner.com pow.com
-cp /pow/lib.*.mjs mjs/
-cp /pow/pow.*.mjs mjs/
-cp /pow/pow.mjs mjs/
+cp /build/pow-runner.sh pow-linux.bin
+cp /build/pow-runner.sh pow-macos.bin
+cp /build/pow-runner.exe pow-windows.exe
 
-(
-  cd mjs/
-  zip ../pow.com *.mjs
-)
+# Bundle all JavaScript files
+# zip -j stores all files in the root directory of the archive
+zip -j pow-linux.bin   /pow/lib.*.mjs /pow/pow.*.mjs /pow/pow.mjs /pow/linux/pow.platform.mjs
+zip -j pow-macos.bin   /pow/lib.*.mjs /pow/pow.*.mjs /pow/pow.mjs /pow/macos/pow.platform.mjs
+zip -j pow-windows.exe /pow/lib.*.mjs /pow/pow.*.mjs /pow/pow.mjs /pow/windows/pow.platform.mjs
 
-mkdir -p /dist/macos
-cp pow.com pow-macos
-echo "o=pow-macos ; " $(head pow.com | grep -a ^dd) | bash
-mv -b pow-macos /dist/macos/pow
+# Assimilate binaries
+/bin/assimilate -e pow-linux.bin
+/bin/assimilate -m pow-macos.bin
 
-mkdir -p /dist/linux
-cp pow.com pow-linux
-sed s/MZqFpD/Ue6OCi/g -i pow-linux
-timeout -s9 1 ./pow-linux 1>/dev/null 2>/dev/null || true
-mv -b pow-linux /dist/linux/pow
+# Move ready binaries to dist
+mkdir -p /dist/linux /dist/macos /dist/windows
+mv -b pow-linux.bin /dist/linux/pow
+mv -b pow-macos.bin /dist/macos/pow
+mv -b pow-windows.exe /dist/windows/pow.exe
 
-mkdir -p /dist/windows
-mv -b pow.com /dist/windows/pow.exe
-
-mkdir -p /dist/mingw
-cp /build/pow.exe /dist/mingw/pow.exe
-# For MinGW build we need to distribute the JS files as well
-cp mjs/*.mjs /dist/mingw/
-
-if [ -e /dist/gitmodules/pow-dist-darwin/pow ]; then
-  cp /dist/macos/pow /dist/gitmodules/pow-dist-darwin/
-fi
-
+# Update submodules
 if [ -e /dist/gitmodules/pow-dist-linux/pow ]; then
   cp /dist/linux/pow /dist/gitmodules/pow-dist-linux/
 fi
-
+if [ -e /dist/gitmodules/pow-dist-darwin/pow ]; then
+  cp /dist/macos/pow /dist/gitmodules/pow-dist-darwin/
+fi
 if [ -e /dist/gitmodules/pow-windows/pow.exe ]; then
   cp /dist/windows/pow.exe /dist/gitmodules/pow-windows/
 fi

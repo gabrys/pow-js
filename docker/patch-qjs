@@ -1,9 +1,6 @@
 #!/bin/bash
 
-target=/build/windows/quickjs/qjs.c
-
-sed 's/^int main(/int orig_main(/' -i "$target" \
-    && cat "$1" >> "$target"
+set -exuo pipefail
 
 target=/build/cosmopolitan/third_party/quickjs/qjs.c
 

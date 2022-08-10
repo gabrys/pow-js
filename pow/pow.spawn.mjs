@@ -1,20 +1,50 @@
 import * as os from "os";
 import * as std from "std";
 
-import { windows, windowsFindExecutable } from "./pow.windows.mjs";
-
 class NotImplemented extends Error {}
 
-function validateStdioOpt(opt) {
-  if (typeof opt !== "string") {
-    throw new NotImplemented("Non-string oprions for stdio are not suppoerted");
+function buildCommand(cmd, args, shell) {
+  const cmdExe = std.getenv("comspec") || "cmd.exe";
+  const defaultShell = pow.windows ? cmdExe : "/bin/sh";
+
+  if (!shell) {
+    return [cmd, ...args];
   }
-  if (opt === "overlapped") {
-    throw new NotImplemented(`spawn: stdio: ${opt} is not supported`);
+
+  if (typeof shell === "string") {
+    throw new NotImplemented(
+      `spawn: selecting a shell is not supported (shell: true will use ${defaultShell})`
+    );
   }
-  if (!["pipe", "inherit", "ignore"].includes(opt)) {
-    throw TypeError(`The argument 'stdio' is invalid. Received '${opt}'`);
+
+  if (args && args.length) {
+    throw new NotImplemented("spawn: shell with arguments is not supported");
   }
+
+  if (pow.windows) {
+    return [defaultShell, "/d", "/s", "/c", cmd];
+  }
+
+  return [defaultShell, "-c", cmd];
+}
+
+function normalizeInputOpts(stdin, input) {
+  if (typeof input !== "string") {
+    if (input) {
+      throw new NotImplemented("spawn: only string input is supported");
+    }
+    input = undefined;
+  }
+
+  // Make sure stdin is "pipe" if and only if input is passed:
+  if (input !== undefined) {
+    stdin = "pipe";
+  }
+  if (input === undefined && stdin === "pipe") {
+    stdin = "ignore";
+  }
+
+  return [stdin, input];
 }
 
 function normalizeStdioOption(stdio) {
@@ -39,45 +69,6 @@ function normalizeStdioOption(stdio) {
   return stdio;
 }
 
-// Based on https://github.com/uki00a/deno_std/blob/3c8549b6fe09a147f320a35d6fc34f08824e0d13/node/spawn.ts
-function buildCommand(file, args, shell) {
-  let shellFile;
-  if (shell && args && args.length) {
-    throw new NotImplemented("spawn: shell with arguments is not supported");
-  }
-  if (shell && windows) {
-    // Set the shell, switches, and commands.
-    if (typeof shell === "string") {
-      shellFile = shell;
-    } else {
-      shellFile = std.getenv("comspec") || "cmd.exe";
-    }
-    // '/d /s /c' is used only for cmd.exe.
-    if (/^(?:.*\\)?cmd(?:\.exe)?$/i.test(shellFile)) {
-      args = ["/d", "/s", "/c", file];
-    } else {
-      args = ["-c", file];
-    }
-  }
-  if (shell && !windows) {
-    if (typeof shell === "string") {
-      shellFile = shell;
-    } else {
-      shellFile = "/bin/sh";
-    }
-    args = ["-c", file];
-  }
-  if (!shell && windows) {
-    if (!file.includes("/") && !file.includes("\\")) {
-      file = windowsFindExecutable(file) || file;
-    }
-  }
-  if (shell) {
-    file = shellFile;
-  }
-  return [file, ...args];
-}
-
 export function spawnSync(cmd, args, inOpts) {
   /*
     + cwd <string> | <URL> Current working directory of the child process.
@@ -85,8 +76,8 @@ export function spawnSync(cmd, args, inOpts) {
       argv0 <string> Explicitly set the value of argv[0] sent to the child process. This will be set to command if not specified.
     + stdio <string> | <Array> Child's stdio configuration.
     + env <Object> Environment key-value pairs. Default: process.env.
-    + uid <number> Sets the user identity of the process (see setuid(2)).
-    + gid <number> Sets the group identity of the process (see setgid(2)).
+      uid <number> Sets the user identity of the process (see setuid(2)).
+      gid <number> Sets the group identity of the process (see setgid(2)).
       timeout <number> In milliseconds the maximum amount of time the process is allowed to run. Default: undefined.
       killSignal <string> | <integer> The signal value to be used when the spawned process will be killed. Default: 'SIGTERM'.
       maxBuffer <number> Largest amount of data in bytes allowed on stdout or stderr. If exceeded, the child process is terminated and any output is truncated. See caveat at maxBuffer and Unicode. Default: 1024 * 1024.
@@ -95,30 +86,35 @@ export function spawnSync(cmd, args, inOpts) {
       windowsVerbatimArguments <boolean> No quoting or escaping of arguments is done on Windows. Ignored on Unix. This is set to true automatically when shell is specified and is CMD. Default: false.
       windowsHide <boolean> Hide the subprocess console window that would normally be created on Windows systems. Default: false.
   */
+  if (!Array.isArray(args) && inOpts === undefined) {
+    inOpts = args;
+    args = [];
+  }
   inOpts = inOpts || {};
 
-  // TODO: spawn: support skipping args
-  // TODO: spawn: better support stdio: ignore
-  // TODO: spawn: support timeout
-
-  const supportedOpts = [
-    "cwd",
-    "input",
-    "stdio",
-    "env",
-    "uid",
-    "gid",
-    "encoding",
-    "shell",
-  ];
+  const supportedOpts = ["cwd", "encoding", "env", "input", "shell", "stdio"];
   const unsupportedOpts = [
     "argv0",
-    "timeout",
+    "gid",
     "killSignal",
     "maxBuffer",
-    "windowsVerbatimArguments",
+    "timeout",
+    "uid",
     "windowsHide",
+    "windowsVerbatimArguments",
   ];
+
+  if (typeof cmd !== "string") {
+    throw new Exception(
+      "First argument to pow.spawnSync needs to be a string (command to run)"
+    );
+  }
+
+  if (!Array.isArray(args)) {
+    throw new Exception(
+      "Second argument to pow.spawnSync needs to be an array (list of arguments)"
+    );
+  }
 
   for (const optName in inOpts) {
     if (unsupportedOpts.includes(optName)) {
@@ -130,27 +126,6 @@ export function spawnSync(cmd, args, inOpts) {
   }
 
   const stdioConfig = normalizeStdioOption(inOpts.stdio);
-
-  const opts = {
-    block: false,
-  };
-
-  let pipeIn;
-  let pipeOut;
-  let pipeErr;
-  let stdin;
-  let stdout;
-  let stderr;
-
-  if (inOpts.cwd) {
-    opts.cwd = inOpts.cwd;
-  }
-
-  if (inOpts.input) {
-    pipeIn = os.pipe();
-    opts.stdin = pipeIn[0];
-  }
-
   const encoding = inOpts.encoding || "buffer";
 
   if (encoding !== "utf-8") {
@@ -162,47 +137,85 @@ export function spawnSync(cmd, args, inOpts) {
   if (stdioConfig[1] === "pipe" && encoding !== "utf-8") {
     throw new NotImplemented("spawn: only encoding: utf-8 is supported");
   }
-  if (["pipe", "ignore"].includes(stdioConfig[1])) {
-    pipeOut = os.pipe();
-    opts.stdout = pipeOut[1];
-  }
 
   if (stdioConfig[2] === "pipe" && encoding !== "utf-8") {
     throw new NotImplemented("spawn: only encoding: utf-8 is supported");
   }
-  if (["pipe", "ignore"].includes(stdioConfig[1])) {
+
+  const fullCmd = buildCommand(cmd, args, inOpts.shell);
+
+  const cwd = inOpts.cwd || pow.cwd;
+  const env = inOpts.env || std.getenviron();
+
+  const [stdinInitial, stdout, stderr] = stdioConfig;
+  const [stdin, input] = normalizeInputOpts(stdinInitial, inOpts.input);
+
+  pow.DEBUG("Running command", fullCmd, cwd, env, input, stdin, stdout, stderr);
+  return runImplCosmo(fullCmd, cwd, env, input, stdin, stdout, stderr);
+}
+
+function runImplCosmo(
+  cmd, // always Array
+  cwd, // always string
+  env, // object of key-value strings
+  input, // undefined or string
+  stdinConfig, // "ignore", "inherit" or "pipe". "pipe" if and only if input is passed
+  stdoutConfig, // "ignore", "inherit" or "pipe"
+  stderrConfig // "ignore", "inherit" or "pipe"
+) {
+  if (pow.windows) {
+    env = supplementWindowsEnvironment(env);
+  }
+
+  const opts = {
+    block: false,
+    cwd: cwd,
+    env: env,
+  };
+
+  let pipeIn;
+  let pipeOut;
+  let pipeErr;
+  let stdin;
+  let stdout;
+  let stderr;
+
+  if (["ignore", "pipe"].includes(stdoutConfig)) {
+    pipeOut = os.pipe();
+    opts.stdout = pipeOut[1];
+  }
+  if (["ignore", "pipe"].includes(stderrConfig)) {
     pipeErr = os.pipe();
     opts.stderr = pipeErr[1];
   }
 
-  opts.env = inOpts.env;
-  opts.uid = inOpts.uid;
-  opts.gid = inOpts.gid;
-
-  const fullCmd = buildCommand(cmd, args, inOpts.shell);
+  if (["ignore", "pipe"].includes(stdinConfig)) {
+    pipeIn = os.pipe();
+    opts.stdin = pipeIn[0];
+  }
 
   // EXEC HERE!
-  const pid = os.exec(fullCmd, opts);
+  const pid = os.exec(cmd, opts);
   const ret = {};
 
-  if (inOpts.input) {
+  if (input !== undefined) {
     stdin = std.fdopen(pipeIn[1], "w");
-    stdin.puts(inOpts.input);
+    stdin.puts(input);
     stdin.close();
   }
 
-  if (["pipe", "ignore"].includes(stdioConfig[1])) {
+  if (["ignore", "pipe"].includes(stdoutConfig)) {
     os.close(pipeOut[1]);
   }
-  if (stdioConfig[1] === "pipe") {
+  if (stdoutConfig === "pipe") {
     stdout = std.fdopen(pipeOut[0], "r");
     ret.stdout = stdout.readAsString();
   }
 
-  if (["pipe", "ignore"].includes(stdioConfig[2])) {
+  if (["ignore", "pipe"].includes(stderrConfig)) {
     os.close(pipeErr[1]);
   }
-  if (stdioConfig[2] === "pipe") {
+  if (stderrConfig === "pipe") {
     stderr = std.fdopen(pipeErr[0], "r");
     ret.stderr = stderr.readAsString();
   }
@@ -213,9 +226,44 @@ export function spawnSync(cmd, args, inOpts) {
     ret.error = {};
   }
 
-  if (inOpts.input) {
+  if (["ignore", "pipe"].includes(stdinConfig)) {
     os.close(opts.stdin);
   }
 
   return ret;
+}
+
+function validateStdioOpt(opt) {
+  if (typeof opt !== "string") {
+    throw new NotImplemented("Non-string oprions for stdio are not supported");
+  }
+  if (opt === "overlapped") {
+    throw new NotImplemented(`spawn: stdio: ${opt} is not supported`);
+  }
+  if (!["pipe", "inherit", "ignore"].includes(opt)) {
+    throw TypeError(`The argument 'stdio' is invalid. Received '${opt}'`);
+  }
+}
+
+function supplementWindowsEnvironment(env) {
+  const newEnv = { ...env };
+
+  for (const envName of [
+    "HOMEDRIVE",
+    "HOMEPATH",
+    "LOGONSERVER",
+    "PATH",
+    "SYSTEMDRIVE",
+    "SYSTEMROOT",
+    "TEMP",
+    "USERDOMAIN",
+    "USERNAME",
+    "USERPROFILE",
+    "WINDIR",
+  ]) {
+    if (newEnv[envName] === undefined) {
+      newEnv[envName] = std.getenv(envName);
+    }
+  }
+  return newEnv;
 }
