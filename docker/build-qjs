@@ -16,7 +16,7 @@ S_BareMetal=2
 S_Windows=4
 
 if [ "$#" -ge 2 ]; then
-  type="$1"  # windows or linux-mac
+  type="$1"  # windows or linux-macos
   file="$2"
 fi
 
