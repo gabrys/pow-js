@@ -28,6 +28,25 @@ function buildCommand(cmd, args, shell) {
   return [defaultShell, "-c", cmd];
 }
 
+function normalizeInputOpts(stdin, input) {
+  if (typeof input !== "string") {
+    if (input) {
+      throw new NotImplemented("spawn: only string input is supported");
+    }
+    input = undefined;
+  }
+
+  // Make sure stdin is "pipe" if and only if input is passed:
+  if (input !== undefined) {
+    stdin = "pipe";
+  }
+  if (input === undefined && stdin === "pipe") {
+    stdin = "ignore";
+  }
+
+  return [stdin, input];
+}
+
 function normalizeStdioOption(stdio) {
   if (!Array.isArray(stdio)) {
     stdio = [stdio, stdio, stdio];
@@ -128,18 +147,8 @@ export function spawnSync(cmd, args, inOpts) {
   const cwd = inOpts.cwd || pow.cwd;
   const env = inOpts.env || std.getenviron();
 
-  let [stdin, stdout, stderr] = stdioConfig;
-
-  let input = inOpts.input;
-  if (typeof input !== "string") {
-    if (input) {
-      throw new NotImplemented("spawn: only string input is supported");
-    }
-    input = undefined;
-  }
-  if (stdin !== "inherit") {
-    stdin = "close";
-  }
+  const [stdinInitial, stdout, stderr] = stdioConfig;
+  const [stdin, input] = normalizeInputOpts(stdinInitial, inOpts.input);
 
   pow.DEBUG("Running command", fullCmd, cwd, env, input, stdin, stdout, stderr);
   return runImplCosmo(fullCmd, cwd, env, input, stdin, stdout, stderr);
@@ -171,16 +180,16 @@ function runImplCosmo(
   let stdout;
   let stderr;
 
-  if (["capture", "ignore"].includes(stdoutConfig)) {
+  if (["ignore", "pipe"].includes(stdoutConfig)) {
     pipeOut = os.pipe();
     opts.stdout = pipeOut[1];
   }
-  if (["capture", "ignore"].includes(stderrConfig)) {
+  if (["ignore", "pipe"].includes(stderrConfig)) {
     pipeErr = os.pipe();
     opts.stderr = pipeErr[1];
   }
 
-  if (stdinConfig === "close") {
+  if (["ignore", "pipe"].includes(stdinConfig)) {
     pipeIn = os.pipe();
     opts.stdin = pipeIn[0];
   }
@@ -195,18 +204,18 @@ function runImplCosmo(
     stdin.close();
   }
 
-  if (["capture", "ignore"].includes(stdoutConfig)) {
+  if (["ignore", "pipe"].includes(stdoutConfig)) {
     os.close(pipeOut[1]);
   }
-  if (stdoutConfig === "capture") {
+  if (stdoutConfig === "pipe") {
     stdout = std.fdopen(pipeOut[0], "r");
     ret.stdout = stdout.readAsString();
   }
 
-  if (["capture", "ignore"].includes(stderrConfig)) {
+  if (["ignore", "pipe"].includes(stderrConfig)) {
     os.close(pipeErr[1]);
   }
-  if (stderrConfig === "capture") {
+  if (stderrConfig === "pipe") {
     stderr = std.fdopen(pipeErr[0], "r");
     ret.stderr = stderr.readAsString();
   }
@@ -217,7 +226,7 @@ function runImplCosmo(
     ret.error = {};
   }
 
-  if (stdinConfig === "close") {
+  if (["ignore", "pipe"].includes(stdinConfig)) {
     os.close(opts.stdin);
   }
 
