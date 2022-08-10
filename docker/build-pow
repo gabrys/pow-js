@@ -5,24 +5,24 @@ set -exuo pipefail
 tmpdir="$(mktemp -d)"
 cd "$tmpdir"
 
-cp /build/pow-runner.sh pow-linux
-cp /build/pow-runner.sh pow-macos
+cp /build/pow-runner.sh pow-linux.bin
+cp /build/pow-runner.sh pow-macos.bin
 cp /build/pow-runner.exe pow-windows.exe
 
 # Bundle all JavaScript files
 # zip -j stores all files in the root directory of the archive
-zip -j pow-linux       /pow/lib.*.mjs /pow/pow.*.mjs /pow/pow.mjs /pow/linux/pow.platform.mjs
-zip -j pow-macos       /pow/lib.*.mjs /pow/pow.*.mjs /pow/pow.mjs /pow/macos/pow.platform.mjs
+zip -j pow-linux.bin   /pow/lib.*.mjs /pow/pow.*.mjs /pow/pow.mjs /pow/linux/pow.platform.mjs
+zip -j pow-macos.bin   /pow/lib.*.mjs /pow/pow.*.mjs /pow/pow.mjs /pow/macos/pow.platform.mjs
 zip -j pow-windows.exe /pow/lib.*.mjs /pow/pow.*.mjs /pow/pow.mjs /pow/windows/pow.platform.mjs
 
 # Assimilate binaries
-/bin/assimilate -e pow-linux
-/bin/assimilate -m pow-macos
+/bin/assimilate -e pow-linux.bin
+/bin/assimilate -m pow-macos.bin
 
 # Move ready binaries to dist
 mkdir -p /dist/linux /dist/macos /dist/windows
-mv -b pow-linux /dist/linux/pow
-mv -b pow-macos /dist/macos/pow
+mv -b pow-linux.bin /dist/linux/pow
+mv -b pow-macos.bin /dist/macos/pow
 mv -b pow-windows.exe /dist/windows/pow.exe
 
 # Update submodules
